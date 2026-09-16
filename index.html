@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#070b18" />
+<title>VOID ANGLER Prototype</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+  <section id="menuScreen" class="screen active">
+    <div class="topbar">
+      <div class="brand">VOID ANGLER <span>PROTOTYPE</span></div>
+      <div class="tokenBox">◈ <span id="menuTokens">0</span></div>
+    </div>
+
+    <div class="menuHero">
+      <div class="spaceScene">
+        <div class="stars"></div>
+        <div class="ship menuShip">
+          <div class="robot">
+            <div class="robotHead"><i></i><i></i></div>
+            <div class="robotBody"></div>
+          </div>
+          <div class="shipBody"></div>
+          <div class="thruster"></div>
+          <div class="fishingLine"></div>
+        </div>
+        <div class="debris d1"></div>
+        <div class="debris d2"></div>
+        <div class="debris d3"></div>
+      </div>
+
+      <div class="menuButtons">
+        <button id="playBtn" class="primary big">プレイ</button>
+        <button id="upgradeMenuBtn">アップグレード</button>
+        <button id="recordsMenuBtn">記録</button>
+        <button id="settingsMenuBtn">設定</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="upgradeScreen" class="screen">
+    <div class="subHeader">
+      <button class="backBtn" data-back="menuScreen">←</button>
+      <h1>恒久アップグレード</h1>
+      <div class="tokenBox">◈ <span id="upgradeTokens">0</span></div>
+    </div>
+    <div class="upgradePreview panel">
+      <div id="upgradeIcon" class="bigIcon">🛸</div>
+      <h2 id="upgradeName">船体強化</h2>
+      <p id="upgradeDesc"></p>
+      <div class="upgradeStats">
+        <span id="upgradeLevel"></span>
+        <span id="upgradeEffect"></span>
+      </div>
+      <button id="doUpgradeBtn" class="primary"></button>
+    </div>
+    <div id="upgradeTabs" class="horizontalTabs bottomChoice"></div>
+  </section>
+
+  <section id="recordsScreen" class="screen">
+    <div class="subHeader">
+      <button class="backBtn" data-back="menuScreen">←</button>
+      <h1>記録</h1>
+      <div></div>
+    </div>
+    <div id="recordsGrid" class="recordsGrid"></div>
+  </section>
+
+  <section id="settingsScreen" class="screen">
+    <div class="subHeader">
+      <button class="backBtn" data-back="menuScreen">←</button>
+      <h1>設定</h1>
+      <div></div>
+    </div>
+    <div class="settingsList panel">
+      <label><span>BGM</span><input id="bgmToggle" type="checkbox" checked></label>
+      <label><span>SE</span><input id="seToggle" type="checkbox" checked></label>
+      <label><span>画面揺れ</span><input id="shakeToggle" type="checkbox" checked></label>
+      <label><span>振動演出</span><input id="vibeToggle" type="checkbox" checked></label>
+      <button id="resetSaveBtn" class="danger">セーブデータを初期化</button>
+    </div>
+  </section>
+
+  <section id="gameScreen" class="screen">
+    <div class="gameHud">
+      <div>
+        <small>DISTANCE</small>
+        <strong><span id="distanceText">0.00</span> ly</strong>
+      </div>
+      <div class="hpWrap">
+        <small>HULL</small>
+        <div class="hpBar"><div id="playerHpFill"></div></div>
+        <span id="playerHpText"></span>
+      </div>
+      <div>
+        <small>LOAD</small>
+        <strong id="loadText">0/0</strong>
+      </div>
+    </div>
+
+    <div id="gameViewport" class="gameViewport">
+      <div class="stars moving"></div>
+      <div id="warningBanner" class="warningBanner">⚠ PIRATE SIGNAL ⚠</div>
+
+      <div id="fishingScene" class="modeLayer active">
+        <div class="ship playerShip">
+          <div class="robot">
+            <div class="robotHead"><i></i><i></i></div>
+            <div class="robotBody"></div>
+          </div>
+          <div class="shipBody"></div>
+          <div class="thruster"></div>
+          <div class="fishingLine long"></div>
+        </div>
+        <div id="biteIndicator" class="biteIndicator">!</div>
+        <div id="floatingHint" class="floatingHint">宇宙を漂流中…</div>
+      </div>
+
+      <div id="battleScene" class="modeLayer">
+        <div id="enemyArea" class="enemyArea">
+          <div id="enemyName" class="enemyName">SCRAP RAIDER</div>
+          <div class="enemyHpBar"><div id="enemyHpFill"></div></div>
+          <div id="enemyShip" class="enemyShip">
+            <button class="enemyPart p-weapon" data-part="weapon">砲</button>
+            <button class="enemyPart p-core" data-part="core">船体</button>
+            <button class="enemyPart p-engine" data-part="engine">推</button>
+            <button class="enemyPart p-shield" data-part="shield">盾</button>
+          </div>
+          <div id="targetLabel" class="targetLabel">AUTO TARGET: HULL</div>
+        </div>
+
+        <div class="battlePlayer">
+          <div class="miniShip"></div>
+        </div>
+
+        <div id="qteOverlay" class="qteOverlay">
+          <button id="qteBtn" class="qteBtn">回避</button>
+          <div id="qteRing" class="qteRing"></div>
+          <div id="qteText">敵の大技！</div>
+        </div>
+      </div>
+
+      <div id="salvageScene" class="modeLayer">
+        <div class="salvageTitle">SALVAGE</div>
+        <p>破壊されていない部位を1つ選択</p>
+        <div id="salvageParts" class="salvageParts"></div>
+      </div>
+
+      <div id="fishingMinigame" class="fishingMinigame">
+        <div class="fishPanel">
+          <div class="fishTop">
+            <span id="fishTitle">SIGNAL</span>
+            <span id="fishProgressText">0%</span>
+          </div>
+          <div class="fishBody">
+            <div class="fishGauge" id="fishGauge">
+              <div id="successZone" class="successZone"></div>
+              <div id="fishLine" class="fishLine"></div>
+            </div>
+            <div class="progressBar"><div id="fishProgress"></div></div>
+          </div>
+          <button id="reelBtn" class="primary reelBtn">巻く</button>
+          <small>押している間は上昇、離すと下降</small>
+        </div>
+      </div>
+    </div>
+
+    <div id="battleActions" class="battleActions"></div>
+
+    <nav id="gameNav" class="gameNav">
+      <button data-tab="fishing" class="active">釣り</button>
+      <button data-tab="upgrade">強化</button>
+      <button data-tab="craft">作成</button>
+      <button data-tab="storage">倉庫</button>
+      <button data-tab="settings">設定</button>
+    </nav>
+
+    <div id="drawer" class="drawer">
+      <div class="drawerHeader">
+        <h2 id="drawerTitle">強化</h2>
+        <button id="closeDrawerBtn">×</button>
+      </div>
+      <div id="drawerContent"></div>
+    </div>
+  </section>
+
+  <section id="resultScreen" class="screen">
+    <div class="resultBox panel">
+      <h1>VOYAGE ENDED</h1>
+      <div id="resultNewRecord" class="newRecord">NEW RECORD!</div>
+      <div class="resultStats">
+        <div><span>到達距離</span><strong id="resultDistance"></strong></div>
+        <div><span>海賊撃破</span><strong id="resultKills"></strong></div>
+        <div><span>釣り成功</span><strong id="resultCatches"></strong></div>
+        <div><span>獲得トークン</span><strong id="resultTokens"></strong></div>
+      </div>
+      <button id="resultUpgradeBtn" class="primary">アップグレードへ</button>
+      <button id="resultMenuBtn">メニューへ</button>
+    </div>
+  </section>
+
+  <div id="toast" class="toast"></div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

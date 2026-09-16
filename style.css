@@ -1,0 +1,100 @@
+
+:root{
+  --bg:#070b18;--panel:#10162a;--panel2:#161d34;--line:#283252;--text:#f4f7ff;--muted:#9aa5c4;
+  --cyan:#5cf2ff;--pink:#ff58d8;--lime:#8cff6f;--yellow:#ffd95c;--red:#ff5e6c;--orange:#ff9b54;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;min-height:100%;touch-action:manipulation}
+button{font:inherit;color:inherit;background:#18213a;border:1px solid #334263;border-radius:10px;min-height:44px;padding:.7rem 1rem;cursor:pointer}
+button:active{transform:translateY(1px)}
+button.primary{background:linear-gradient(180deg,#1d8ea5,#116275);border-color:#67e8f9}
+button.big{font-size:1.25rem;padding:1rem}
+button.danger{background:#442029;border-color:#7a3440}
+.screen{display:none;min-height:100vh}
+.screen.active{display:block}
+.topbar,.subHeader,.gameHud{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.5rem;padding:12px 14px}
+.brand{font-weight:800;letter-spacing:.08em}.brand span{font-size:.65rem;color:var(--muted)}
+.tokenBox{justify-self:end;background:#161f36;border:1px solid #3a466a;padding:.45rem .7rem;border-radius:999px;color:var(--yellow)}
+.menuHero{max-width:760px;margin:auto;padding:0 14px 24px}
+.spaceScene{position:relative;height:48vh;min-height:300px;max-height:520px;border:1px solid #25304c;border-radius:18px;overflow:hidden;background:radial-gradient(circle at 70% 20%,#26234c 0,transparent 25%),linear-gradient(#060916,#0b1021)}
+.stars,.stars:before,.stars:after{position:absolute;inset:0;content:"";background-image:radial-gradient(#fff 1px,transparent 1px);background-size:57px 57px;opacity:.25}
+.stars:before{transform:translate(20px,10px);background-size:87px 87px;opacity:.18}
+.stars:after{transform:translate(-10px,30px);background-size:123px 123px;opacity:.12}
+.menuButtons{display:grid;gap:.7rem;margin-top:14px}
+.ship{position:absolute;width:160px;height:72px;left:50%;top:43%;transform:translate(-50%,-50%)}
+.shipBody{position:absolute;left:18px;right:20px;bottom:8px;height:34px;background:#8794ac;border:4px solid #202940;border-radius:12px 18px 10px 10px;box-shadow:inset 0 -8px #4e5970}
+.shipBody:before{content:"";position:absolute;left:30px;top:-14px;width:44px;height:20px;background:#39445d;border:3px solid #202940;border-radius:10px}
+.thruster{position:absolute;left:3px;bottom:17px;width:22px;height:16px;background:#343e55;border:3px solid #202940}
+.thruster:before{content:"";position:absolute;right:100%;top:2px;width:28px;height:8px;background:linear-gradient(90deg,transparent,var(--cyan));filter:drop-shadow(0 0 6px var(--cyan))}
+.robot{position:absolute;width:40px;height:48px;left:67px;bottom:39px;z-index:2}
+.robotHead{position:absolute;left:5px;top:0;width:30px;height:22px;background:#c4ccd9;border:3px solid #283147;border-radius:8px}
+.robotHead i{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--cyan);top:6px;box-shadow:0 0 5px var(--cyan)}
+.robotHead i:first-child{left:6px}.robotHead i:last-child{right:6px}
+.robotBody{position:absolute;left:9px;top:20px;width:22px;height:25px;background:#7d899f;border:3px solid #283147;border-radius:5px}
+.fishingLine{position:absolute;width:2px;background:#c8d3eb;left:90px;top:22px;height:130px;opacity:.8}
+.fishingLine.long{height:340px}
+.debris{position:absolute;border:3px solid #313c58;transform:rotate(17deg)}
+.d1{width:38px;height:18px;left:18%;top:26%;background:#4bd5d9}.d2{width:22px;height:22px;right:16%;top:20%;background:#ff6fd8}.d3{width:30px;height:12px;right:25%;bottom:18%;background:#ffd65f}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.upgradePreview{max-width:700px;margin:14px auto;text-align:center}
+.bigIcon{font-size:3rem}.upgradeStats{display:flex;justify-content:center;gap:1rem;color:var(--muted);margin:10px}
+.horizontalTabs{display:flex;gap:8px;overflow:auto;padding:10px 14px}.horizontalTabs button{white-space:nowrap}
+.bottomChoice{max-width:900px;margin:auto}
+.recordsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px;max-width:760px;margin:auto}
+.recordCard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.recordCard span{color:var(--muted);font-size:.8rem}.recordCard strong{display:block;font-size:1.2rem;margin-top:6px}
+.settingsList{max-width:620px;margin:14px auto;display:grid;gap:10px}.settingsList label{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #26314d}
+.gameHud{position:relative;z-index:20;background:#0c1122;border-bottom:1px solid #202943;font-size:.78rem}
+.gameHud>div{text-align:center}.gameHud>div:first-child{text-align:left}.gameHud>div:last-child{text-align:right}.gameHud small{display:block;color:var(--muted);font-size:.65rem}
+.hpWrap{min-width:140px}.hpBar,.enemyHpBar,.progressBar{height:10px;background:#2a3147;border-radius:999px;overflow:hidden}.hpBar>div{height:100%;background:var(--lime)}.enemyHpBar>div{height:100%;background:var(--red)}.progressBar>div{height:100%;background:var(--cyan)}
+.gameViewport{position:relative;height:calc(100vh - 134px);min-height:430px;overflow:hidden;background:linear-gradient(#050815,#0b1022)}
+.modeLayer{position:absolute;inset:0;display:none}.modeLayer.active{display:block}
+.playerShip{top:39%;left:50%}
+.floatingHint{position:absolute;left:50%;top:70%;transform:translateX(-50%);color:var(--muted);font-size:.8rem}
+.biteIndicator{display:none;position:absolute;left:calc(50% + 45px);top:27%;font-size:2.2rem;color:var(--yellow);text-shadow:0 0 12px var(--yellow);animation:bounce .4s infinite alternate}
+@keyframes bounce{to{transform:translateY(-7px)}}
+.warningBanner{display:none;position:absolute;z-index:40;left:50%;top:18%;transform:translateX(-50%);padding:10px 16px;background:#5b131b;border:2px solid var(--red);color:#fff;font-weight:bold;letter-spacing:.08em;animation:flash .25s alternate infinite}
+@keyframes flash{to{opacity:.55}}
+.enemyArea{position:absolute;top:6%;left:50%;transform:translateX(-50%);width:min(420px,92%);text-align:center}
+.enemyName{font-weight:bold;margin-bottom:6px}
+.enemyShip{position:relative;height:160px;margin-top:16px;background:linear-gradient(180deg,transparent 20%,#3c263e 20% 80%,transparent 80%);clip-path:polygon(8% 46%,28% 22%,82% 22%,100% 50%,82% 78%,28% 78%);border-radius:20px}
+.enemyPart{position:absolute;min-width:48px;padding:.4rem;background:#6a355f;border-color:#a85591}
+.enemyPart.destroyed{opacity:.25;text-decoration:line-through;pointer-events:none}
+.p-core{left:44%;top:40%}.p-weapon{left:63%;top:24%}.p-engine{left:13%;top:40%}.p-shield{left:45%;top:65%}
+.enemyPart.targeted{outline:3px solid var(--yellow)}
+.targetLabel{font-size:.72rem;color:var(--yellow);margin-top:5px}
+.battlePlayer{position:absolute;bottom:12%;left:50%;transform:translateX(-50%)}.miniShip{width:120px;height:42px;background:#65728c;border:4px solid #263047;clip-path:polygon(0 30%,75% 30%,100% 50%,75% 70%,0 70%)}
+.battleActions{display:none;position:absolute;z-index:50;bottom:72px;left:0;right:0;padding:8px;grid-template-columns:repeat(4,1fr);gap:7px;background:#090e1d;border-top:1px solid #222d48}
+.battleActions.active{display:grid}.battleActions button{padding:.6rem .2rem;font-size:.72rem;min-height:52px}
+.qteOverlay{display:none;position:absolute;inset:0;z-index:35;background:#0005;align-items:center;justify-content:center}.qteOverlay.active{display:flex}
+.qteBtn{position:absolute;width:82px;height:82px;border-radius:50%;background:#164f65;border:3px solid var(--cyan);z-index:2}
+.qteRing{position:absolute;width:220px;height:220px;border:5px solid var(--yellow);border-radius:50%}
+#qteText{position:absolute;top:calc(50% + 75px);font-weight:bold;color:var(--yellow)}
+.salvageTitle{text-align:center;margin-top:18%;font-size:1.5rem;color:var(--cyan)}#salvageScene p{text-align:center}
+.salvageParts{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:16px}.salvageParts button{min-width:110px}
+.fishingMinigame{display:none;position:absolute;inset:0;z-index:60;background:#040714e8;align-items:center;justify-content:center;padding:20px}.fishingMinigame.active{display:flex}
+.fishPanel{width:min(420px,95%);text-align:center}.fishTop{display:flex;justify-content:space-between;margin-bottom:10px}
+.fishBody{display:grid;grid-template-columns:100px 1fr;gap:18px;align-items:center}
+.fishGauge{position:relative;width:90px;height:300px;background:#151c30;border:2px solid #34415e;border-radius:14px;overflow:hidden;margin:auto}
+.successZone{position:absolute;left:8px;right:8px;height:74px;background:#3df59b33;border:2px solid var(--lime);border-radius:8px}
+.fishLine{position:absolute;left:4px;right:4px;height:6px;background:var(--cyan);box-shadow:0 0 8px var(--cyan);border-radius:5px}
+.progressBar{height:20px}.reelBtn{width:100%;margin-top:14px}
+.gameNav{position:absolute;z-index:45;bottom:0;left:0;right:0;height:64px;background:#0b1020;border-top:1px solid #26314d;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:5px}.gameNav button{padding:.3rem;font-size:.72rem;min-height:50px}.gameNav button.active{border-color:var(--cyan);color:var(--cyan)}
+.drawer{display:none;position:absolute;z-index:55;left:0;right:0;bottom:64px;max-height:65%;overflow:auto;background:#0d1325;border-top:1px solid #31405f;padding:12px}.drawer.active{display:block}.drawerHeader{display:flex;justify-content:space-between;align-items:center}.drawerHeader h2{margin:0}
+.cardGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.itemCard{background:#151c31;border:1px solid #303b58;border-radius:12px;padding:10px}.itemCard h3{font-size:.85rem;margin:0 0 5px}.itemCard p{font-size:.7rem;color:var(--muted);margin:3px 0}.itemCard .actions{display:flex;gap:5px;margin-top:8px}.itemCard .actions button{min-height:36px;padding:.3rem;font-size:.68rem;flex:1}
+.statRow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #222d48}
+.materials{display:flex;flex-wrap:wrap;gap:6px}.chip{background:#18213b;border:1px solid #33405e;border-radius:999px;padding:.3rem .55rem;font-size:.7rem}
+.resultBox{max-width:560px;margin:10vh auto 0;text-align:center}.resultStats{display:grid;gap:8px;margin:20px 0}.resultStats div{display:flex;justify-content:space-between;border-bottom:1px solid #2c3652;padding:8px}.newRecord{display:none;color:var(--yellow);font-weight:bold}.newRecord.active{display:block}
+.toast{position:fixed;z-index:100;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);opacity:0;transition:.2s;background:#101827;border:1px solid #405071;border-radius:10px;padding:10px 14px;pointer-events:none;max-width:90%;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (orientation:landscape) and (min-width:620px){
+  .gameViewport{height:calc(100vh - 120px)}
+  .playerShip{left:36%;top:42%}
+  #battleScene .enemyArea{left:73%;top:16%;width:42%}
+  .battlePlayer{left:25%;bottom:37%}
+  .gameNav{width:420px;left:50%;transform:translateX(-50%);border:1px solid #26314d;border-bottom:0;border-radius:14px 14px 0 0}
+  .drawer{left:10%;right:10%;border:1px solid #31405f;border-radius:14px 14px 0 0}
+  .battleActions{left:15%;right:15%;bottom:66px;border:1px solid #222d48;border-radius:12px 12px 0 0}
+}
+@media (max-width:420px){
+  .brand{font-size:.8rem}.gameHud{padding:8px 7px}.hpWrap{min-width:115px}.cardGrid{grid-template-columns:1fr}.recordsGrid{grid-template-columns:1fr}
+}
