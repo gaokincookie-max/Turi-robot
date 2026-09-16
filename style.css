@@ -102,3 +102,14 @@ button.danger{background:#442029;border-color:#7a3440}
 .reelBtn:active{transform:translateY(1px) scale(.985)}
 
 .fishLine.inside{background:var(--lime);box-shadow:0 0 10px var(--lime)}
+
+.subScreen{display:none;position:absolute;z-index:70;inset:0;background:#090e1c;overflow:auto;padding-bottom:76px}
+.subScreen.active{display:block}
+.subScreenHeader{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;position:sticky;top:0;z-index:2;background:#0d1325;border-bottom:1px solid #2a3654;padding:10px 12px}
+.subScreenHeader h2{margin:0;text-align:center;font-size:1rem}
+.subScreenBody{padding:12px;max-width:900px;margin:auto}
+.majorTabs,.minorTabs{display:flex;gap:8px;overflow:auto;margin-bottom:10px}
+.majorTabs button,.minorTabs button{white-space:nowrap}
+.majorTabs button.active,.minorTabs button.active{border-color:var(--cyan);color:var(--cyan)}
+.previewPanel{background:#11192e;border:1px solid #2d3856;border-radius:14px;padding:14px;margin-bottom:12px}
+.previewPanel h3{margin:.2rem 0 .5rem}
