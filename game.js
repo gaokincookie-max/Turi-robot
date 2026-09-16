@@ -189,15 +189,21 @@ function startFishing(salvage){
  const btn=$("#reelBtn");
 
  // 連打式：1タップごとに大きく上昇。長押しによる継続上昇は行わない。
- btn.onpointerdown=null;
- btn.onpointerup=null;
- btn.onpointercancel=null;
- btn.onpointerleave=null;
- btn.onclick=(e)=>{
+ btn.onclick=null;
+ let tapLocked=false;
+ btn.onpointerdown=(e)=>{
    e.preventDefault();
-   tapBoost += 0.115 + mods.heavy*0.22;
-   if(tapBoost>0.22) tapBoost=0.22;
+   if(tapLocked) return;
+   tapLocked=true;
+   // 1回のタップにつき1回だけ大きく上昇。
+   // 押しっぱなしでは追加上昇しない。
+   tapBoost += 0.135 + mods.heavy*0.24;
+   if(tapBoost>0.24) tapBoost=0.24;
  };
+ const releaseTap=()=>{ tapLocked=false; };
+ btn.onpointerup=releaseTap;
+ btn.onpointercancel=releaseTap;
+ btn.onpointerleave=releaseTap;
 
  cancelAnimationFrame(fishingAnim);
  function loop(t){
@@ -209,10 +215,10 @@ function startFishing(salvage){
    if(zone<.08){zone=.08;dir=1}
 
    // ラインは常時下降。タップで瞬間的に上へ跳ねる。
-   line -= dt*0.34;
+   line += dt*0.34;
    if(tapBoost>0){
      const applied=Math.min(tapBoost,dt*3.6);
-     line += applied;
+     line -= applied;
      tapBoost -= applied;
    }
    line=clamp(line,.01,.97);
@@ -224,6 +230,7 @@ function startFishing(salvage){
    const zoneTop = zone-width/2;
    const zoneBottom = zone+width/2;
    const inZone = line >= zoneTop && line <= zoneBottom;
+   $("#fishLine").classList.toggle("inside", inZone);
 
    if(inZone){
      progress += dt*(0.32+mods.fast);
@@ -234,7 +241,7 @@ function startFishing(salvage){
 
    $("#successZone").style.top=`${zoneTop*100}%`;
    $("#successZone").style.height=`${width*100}%`;
-   $("#fishLine").style.bottom=`${line*100}%`;
+   $("#fishLine").style.top=`${line*100}%`;
    $("#fishProgress").style.width=`${progress*100}%`;
    $("#fishProgressText").textContent=`${Math.floor(progress*100)}%`;
 

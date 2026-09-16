@@ -100,3 +100,5 @@ button.danger{background:#442029;border-color:#7a3440}
 }
 
 .reelBtn:active{transform:translateY(1px) scale(.985)}
+
+.fishLine.inside{background:var(--lime);box-shadow:0 0 10px var(--lime)}
