@@ -183,24 +183,61 @@ function startFishing(salvage){
  run.mode=salvage?"salvageFishing":"fishingMini";saveRun();
  $("#fishingMinigame").classList.add("active");
  $("#fishTitle").textContent=salvage?"SALVAGE HOOK":"SIGNAL "+(run.pendingCatch?.signal||"!");
- let line=.45,zone=.48,dir=1,progress=0,last=performance.now(),holding=false;
+ let line=.45,zone=.48,dir=1,progress=0,last=performance.now();
+ let tapBoost=0;
  const mods=rodMod(), reelPenalty=1-Math.min(.45,.05*Math.sqrt(meta.upgrades.reel||0));
  const btn=$("#reelBtn");
- const down=e=>{e.preventDefault();holding=true}, up=e=>{e.preventDefault();holding=false};
- btn.onpointerdown=down;btn.onpointerup=up;btn.onpointercancel=up;btn.onpointerleave=up;
+
+ // 連打式：1タップごとに大きく上昇。長押しによる継続上昇は行わない。
+ btn.onpointerdown=null;
+ btn.onpointerup=null;
+ btn.onpointercancel=null;
+ btn.onpointerleave=null;
+ btn.onclick=(e)=>{
+   e.preventDefault();
+   tapBoost += 0.115 + mods.heavy*0.22;
+   if(tapBoost>0.22) tapBoost=0.22;
+ };
+
  cancelAnimationFrame(fishingAnim);
  function loop(t){
    let dt=Math.min(.04,(t-last)/1000);last=t;
+
+   // 成功ゾーンは上下移動
    zone+=dir*dt*(0.28+(run.pendingCatch?.quality||2)*0.035);
-   if(zone>.78){zone=.78;dir=-1} if(zone<.08){zone=.08;dir=1}
-   line+=dt*(holding?(0.58+mods.heavy):( -0.42));
+   if(zone>.78){zone=.78;dir=-1}
+   if(zone<.08){zone=.08;dir=1}
+
+   // ラインは常時下降。タップで瞬間的に上へ跳ねる。
+   line -= dt*0.34;
+   if(tapBoost>0){
+     const applied=Math.min(tapBoost,dt*3.6);
+     line += applied;
+     tapBoost -= applied;
+   }
    line=clamp(line,.01,.97);
+
    const width=.23+mods.stable;
-   const inZone=Math.abs(line-zone)<width/2;
-   progress+=dt*(inZone?(0.32+mods.fast):(-0.18*reelPenalty));
+
+   // 判定を明示化：
+   // fishLine の中心位置が successZone の上下端の間にある時だけ成功扱い。
+   const zoneTop = zone-width/2;
+   const zoneBottom = zone+width/2;
+   const inZone = line >= zoneTop && line <= zoneBottom;
+
+   if(inZone){
+     progress += dt*(0.32+mods.fast);
+   }else{
+     progress -= dt*(0.18*reelPenalty);
+   }
    progress=clamp(progress,0,1);
-   $("#successZone").style.top=`${(zone-width/2)*100}%`;$("#successZone").style.height=`${width*100}%`;
-   $("#fishLine").style.bottom=`${line*100}%`;$("#fishProgress").style.width=`${progress*100}%`;$("#fishProgressText").textContent=`${Math.floor(progress*100)}%`;
+
+   $("#successZone").style.top=`${zoneTop*100}%`;
+   $("#successZone").style.height=`${width*100}%`;
+   $("#fishLine").style.bottom=`${line*100}%`;
+   $("#fishProgress").style.width=`${progress*100}%`;
+   $("#fishProgressText").textContent=`${Math.floor(progress*100)}%`;
+
    if(progress>=1){finishFishing(true,salvage);return}
    fishingAnim=requestAnimationFrame(loop);
  }

@@ -98,3 +98,5 @@ button.danger{background:#442029;border-color:#7a3440}
 @media (max-width:420px){
   .brand{font-size:.8rem}.gameHud{padding:8px 7px}.hpWrap{min-width:115px}.cardGrid{grid-template-columns:1fr}.recordsGrid{grid-template-columns:1fr}
 }
+
+.reelBtn:active{transform:translateY(1px) scale(.985)}
