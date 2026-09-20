@@ -107,6 +107,7 @@ function newRun(startDistance=null){
    materials:{metal:5,circuit:3,mech:2,cell:1},
    weapons:[{id:"pulse",uid:uid()}],equipments:[{id:"armorplate",uid:uid()}],storage:[],
    rod:{rod:"標準",reel:"標準",line:"標準",hook:"standard"},
+   fishingInventory:{rod:["標準"],reel:["標準"],line:["標準"],hook:["standard"]},
    kills:0,catches:0,tokensEarned:0,
    nextBite:rand(5,9),nextPirate:start+rand(2.4,3.8),mode:"fishing",
    pendingCatch:null,pendingSalvage:null,enemy:null,actionCooldowns:{},
@@ -115,8 +116,27 @@ function newRun(startDistance=null){
  recalcPlayer(); saveRun(); startGame();
 }
 function uid(){return Math.random().toString(36).slice(2,10)}
+function ensureRunShape(){
+ if(!run)return;
+ if(!run.rod) run.rod={rod:"標準",reel:"標準",line:"標準",hook:"standard"};
+ if(!run.fishingInventory) run.fishingInventory={rod:["標準"],reel:["標準"],line:["標準"],hook:["standard"]};
+ for(const k of ["rod","reel","line"]){
+   if(!Array.isArray(run.fishingInventory[k])) run.fishingInventory[k]=["標準"];
+   if(!run.fishingInventory[k].includes("標準")) run.fishingInventory[k].unshift("標準");
+   if(run.rod[k] && !run.fishingInventory[k].includes(run.rod[k])) run.fishingInventory[k].push(run.rod[k]);
+ }
+ if(!Array.isArray(run.fishingInventory.hook)) run.fishingInventory.hook=["standard"];
+ if(!run.fishingInventory.hook.includes("standard")) run.fishingInventory.hook.unshift("standard");
+ if(run.rod.hook && !run.fishingInventory.hook.includes(run.rod.hook)) run.fishingInventory.hook.push(run.rod.hook);
+ if(!run.materials) run.materials={metal:0,circuit:0,mech:0,cell:0};
+ for(const k of ["metal","circuit","mech","cell"]) if(typeof run.materials[k]!=="number") run.materials[k]=0;
+ if(!Array.isArray(run.storage)) run.storage=[];
+ if(!Array.isArray(run.weapons)) run.weapons=[];
+ if(!Array.isArray(run.equipments)) run.equipments=[];
+}
 function recalcPlayer(){
  if(!run)return;
+ ensureRunShape();
  const hullBonus=1+0.08*Math.sqrt(meta.upgrades.hull||0);
  let baseHp=(100+(run.shipLevel-1)*55)*hullBonus;
  let hpBonus=0,shield=0,repair=0,atkMult=0,fireRate=0,qte=0,partBonus=0;
@@ -141,8 +161,24 @@ function updateHUD(){
  $("#playerHpFill").style.width=`${clamp(run.hp/run.maxHp*100,0,100)}%`;$("#loadText").textContent=`${getLoad()}/${run.maxLoad}`;
 }
 function startGame(){
- showScreen("gameScreen"); $("#drawer").classList.remove("active"); switchMode(run.mode||"fishing"); clearInterval(gameTimer);
- gameTimer=setInterval(gameTick,100); renderBattleActions(); updateHUD();
+ ensureRunShape();
+ uiPaused=false;
+ $("#subScreen").classList.remove("active");
+ $("#drawer").classList.remove("active");
+ $$("#gameNav button").forEach(b=>b.classList.toggle("active",b.dataset.tab==="fishing"));
+ showScreen("gameScreen");
+ // メニュー系画面からの再開は必ず通常の釣り画面。
+ // 戦闘中保存だけは戦闘開始状態として復帰させる。
+ if(!["battle","fishingMini","salvageFishing","salvage","warning"].includes(run.mode)) run.mode="fishing";
+ if(run.mode==="fishingMini" || run.mode==="salvageFishing") run.mode="fishing";
+ if(run.mode==="salvage" && run.enemy) showSalvage();
+ else if(run.mode==="battle" && run.enemy) startBattle();
+ else { run.mode="fishing"; switchMode("fishing"); }
+ clearInterval(gameTimer);
+ gameTimer=setInterval(gameTick,100);
+ renderBattleActions();
+ updateHUD();
+ saveRun();
 }
 function gameTick(){
  if(!run || !$("#gameScreen").classList.contains("active"))return;
@@ -446,6 +482,18 @@ function closeSubScreen(){
  currentTab="fishing";
  $$("#gameNav button").forEach(b=>b.classList.toggle("active",b.dataset.tab==="fishing"));
 }
+function equipmentSummaryHTML(){
+ return `<div class="previewPanel loadSummary">
+   <div class="statRow"><span>装備負荷</span><strong>${getLoad()} / ${run.maxLoad}</strong></div>
+   <div class="statRow"><span>武器スロット</span><strong>${run.weapons.length} / ${run.weaponSlots}</strong></div>
+   <div class="statRow"><span>装備スロット</span><strong>${run.equipments.length} / ${run.equipSlots}</strong></div>
+   <div class="statRow"><span>倉庫</span><strong>${run.storage.length} / ${run.storageCap}</strong></div>
+ </div>`;
+}
+function fishingOwned(type,id){
+ ensureRunShape();
+ return run.fishingInventory[type]?.includes(id);
+}
 function renderUpgradeSubScreen(major="ship",minor=null){
  const body=$("#subScreenBody");
  if(major==="ship" && !minor) minor="hull";
@@ -471,12 +519,14 @@ function renderUpgradeSubScreen(major="ship",minor=null){
        <button id="shipUpgradeBtn2" class="primary" ${run.materials.metal<cost?"disabled":""}>船体強化：金属片 ${cost}</button>
      </div>`;
    } else if(minor==="equipment"){
+     h+=equipmentSummaryHTML();
      h+=`<div class="previewPanel"><h3>装備中</h3><p>耐久・防御・補助系のパッシブ装備。</p></div><div class="cardGrid">`;
      run.equipments.forEach(i=>{const d=equipments.find(x=>x.id===i.id);h+=itemCard(i,"equip",d,true)});
      h+=`</div><h3>倉庫から装備</h3><div class="cardGrid">`;
      run.storage.filter(x=>x.type==="equip").forEach(i=>{const d=equipments.find(x=>x.id===i.id);h+=itemCard(i,"equip",d,false)});
      h+=`</div>`;
    } else {
+     h+=equipmentSummaryHTML();
      h+=`<div class="previewPanel"><h3>武器</h3><p>自動攻撃。アクティブ能力は一部の武器のみ。</p></div><div class="cardGrid">`;
      run.weapons.forEach(i=>{const d=weapons.find(x=>x.id===i.id);h+=itemCard(i,"weapon",d,true)});
      h+=`</div><h3>倉庫から装備</h3><div class="cardGrid">`;
@@ -492,12 +542,12 @@ function renderUpgradeSubScreen(major="ship",minor=null){
    </div>`;
    if(minor==="hook"){
      h+=`<div class="previewPanel"><h3>${hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック"}</h3><p>${hookTypes.find(x=>x.id===run.rod.hook)?.desc||""}</p></div><div class="cardGrid">`;
-     hookTypes.forEach(x=>{h+=`<div class="itemCard"><h3>${x.name}</h3><p>${x.desc}</p><div class="actions"><button data-sethook="${x.id}" ${run.rod.hook===x.id?"disabled":""}>装備</button></div></div>`});
+     hookTypes.filter(x=>fishingOwned("hook",x.id)).forEach(x=>{h+=`<div class="itemCard"><h3>${x.name}</h3><p>${x.desc}</p><div class="actions"><button data-sethook="${x.id}" ${run.rod.hook===x.id?"disabled":""}>装備</button></div></div>`});
      h+=`</div>`;
    }else{
      const label={rod:"ロッド",reel:"リール",line:"ライン"}[minor];
      h+=`<div class="previewPanel"><h3>${label}: ${run.rod[minor]}</h3><p>基本的な釣り操作性能を調整する部位。</p></div><div class="cardGrid">`;
-     rodTypes.forEach(x=>{h+=`<div class="itemCard"><h3>${x}${label}</h3><p>${x==="安定"?"成功ゾーンへの追従が楽になる":x==="高速"?"回収進捗が速くなる":x==="重量"?"タップ上昇力が強くなる":"標準性能"}</p><div class="actions"><button data-setrod="${minor}:${x}" ${run.rod[minor]===x?"disabled":""}>装備</button></div></div>`});
+     rodTypes.filter(x=>fishingOwned(minor,x)).forEach(x=>{h+=`<div class="itemCard"><h3>${x}${label}</h3><p>${x==="安定"?"成功ゾーンへの追従が楽になる":x==="高速"?"回収進捗が速くなる":x==="重量"?"タップ上昇力が強くなる":"標準性能"}</p><div class="actions"><button data-setrod="${minor}:${x}" ${run.rod[minor]===x?"disabled":""}>装備</button></div></div>`});
      h+=`</div>`;
    }
  }
@@ -511,27 +561,121 @@ function renderUpgradeSubScreen(major="ship",minor=null){
  $$("[data-sethook]").forEach(b=>b.onclick=()=>{run.rod.hook=b.dataset.sethook;saveRun();renderUpgradeSubScreen("fishing","hook")});
  $$("[data-setrod]").forEach(b=>b.onclick=()=>{const [k,v]=b.dataset.setrod.split(":");run.rod[k]=v;saveRun();renderUpgradeSubScreen("fishing",k)});
 }
-function renderCraftSubScreen(){
- $("#subScreenBody").innerHTML=`<div class="previewPanel"><h3>作成</h3><p>解禁済み設計図から武器・装備を作成します。</p></div><div id="craftSubInner"></div>`;
- const old=$("#drawerContent"); const tmp=document.createElement("div"); tmp.id="drawerContent"; tmp.style.display="none"; document.body.appendChild(tmp);
- renderCraft();
- $("#craftSubInner").innerHTML=tmp.innerHTML;
- tmp.remove();
- $$("[data-craft]").forEach(b=>b.onclick=()=>{craft(...b.dataset.craft.split(":"));renderCraftSubScreen()});
+function renderCraftSubScreen(category="weapon"){
+ ensureRunShape();
+ const labels={weapon:"武器",equip:"装備",rod:"ロッド",reel:"リール",line:"ライン",hook:"フック"};
+ let h=materialsHTML();
+ h+=`<div class="minorTabs">
+   ${Object.entries(labels).map(([k,v])=>`<button data-craftcat="${k}" class="${category===k?"active":""}">${v}</button>`).join("")}
+ </div>`;
+
+ if(category==="weapon"){
+   h+=`<div class="previewPanel"><h3>武器作成</h3><p>未解析の設計図は作成できません。</p></div><div class="cardGrid">`;
+   for(const w of weapons){
+     const unlocked=meta.unlocks.weapons.includes(w.id);
+     h+=`<div class="itemCard"><h3>${unlocked?w.name:"？？？？"}</h3><p>${unlocked?w.desc:"設計図未解析"}</p>
+       ${unlocked?`<p>ATK ${w.atk} / 負荷 ${w.load}</p><p>${costText(w.cost)}</p>
+       <div class="actions"><button data-craftitem="weapon:${w.id}" ${afford(w.cost)&&run.storage.length<run.storageCap?"":"disabled"}>作成</button></div>`:""}
+     </div>`;
+   }
+   h+=`</div>`;
+ } else if(category==="equip"){
+   h+=`<div class="previewPanel"><h3>装備作成</h3><p>未解析の設計図は作成できません。</p></div><div class="cardGrid">`;
+   for(const e of equipments){
+     const unlocked=meta.unlocks.equipments.includes(e.id);
+     h+=`<div class="itemCard"><h3>${unlocked?e.name:"？？？？"}</h3><p>${unlocked?e.desc:"設計図未解析"}</p>
+       ${unlocked?`<p>負荷 ${e.load}</p><p>${costText(e.cost)}</p>
+       <div class="actions"><button data-craftitem="equip:${e.id}" ${afford(e.cost)&&run.storage.length<run.storageCap?"":"disabled"}>作成</button></div>`:""}
+     </div>`;
+   }
+   h+=`</div>`;
+ } else if(["rod","reel","line"].includes(category)){
+   const label=labels[category];
+   h+=`<div class="previewPanel"><h3>${label}作成</h3><p>釣具の設計図は最初からすべて解放済みです。作成したものは「強化 → 釣り」から装備できます。</p></div><div class="cardGrid">`;
+   for(const type of rodTypes){
+     if(type==="標準"){
+       h+=`<div class="itemCard"><h3>標準${label}</h3><p>初期所持。</p><div class="actions"><button disabled>所持済み</button></div></div>`;
+       continue;
+     }
+     const cost=fishingRecipes[category][type];
+     const owned=fishingOwned(category,type);
+     const desc=type==="安定"?"成功ゾーンへの追従が楽になる":type==="高速"?"回収進捗が速くなる":type==="重量"?"タップ上昇力が強くなる":"標準性能";
+     h+=`<div class="itemCard"><h3>${type}${label}</h3><p>${desc}</p><p>${costText(cost)}</p>
+       <div class="actions"><button data-craftfish="${category}:${type}" ${owned||!afford(cost)?"disabled":""}>${owned?"所持済み":"作成"}</button></div></div>`;
+   }
+   h+=`</div>`;
+ } else if(category==="hook"){
+   h+=`<div class="previewPanel"><h3>フック作成</h3><p>フックの設計図は最初からすべて解放済み。釣果傾向を変えます。</p></div><div class="cardGrid">`;
+   for(const hook of hookTypes){
+     if(hook.id==="standard"){
+       h+=`<div class="itemCard"><h3>${hook.name}</h3><p>${hook.desc}</p><div class="actions"><button disabled>所持済み</button></div></div>`;
+       continue;
+     }
+     const cost=fishingRecipes.hook[hook.id];
+     const owned=fishingOwned("hook",hook.id);
+     h+=`<div class="itemCard"><h3>${hook.name}</h3><p>${hook.desc}</p><p>${costText(cost)}</p>
+       <div class="actions"><button data-craftfish="hook:${hook.id}" ${owned||!afford(cost)?"disabled":""}>${owned?"所持済み":"作成"}</button></div></div>`;
+   }
+   h+=`</div>`;
+ }
+
+ $("#subScreenBody").innerHTML=h;
+ $$("[data-craftcat]").forEach(b=>b.onclick=()=>renderCraftSubScreen(b.dataset.craftcat));
+ $$("[data-craftitem]").forEach(b=>b.onclick=()=>{
+   const [type,id]=b.dataset.craftitem.split(":");
+   craft(type,id);
+   renderCraftSubScreen(category);
+ });
+ $$("[data-craftfish]").forEach(b=>b.onclick=()=>{
+   const [type,id]=b.dataset.craftfish.split(":");
+   craftFishing(type,id);
+   renderCraftSubScreen(category);
+ });
 }
+
+function craftFishing(type,id){
+ ensureRunShape();
+ const cost=fishingRecipes[type]?.[id];
+ if(!cost || !afford(cost) || fishingOwned(type,id)) return;
+ Object.entries(cost).forEach(([k,v])=>run.materials[k]-=v);
+ run.fishingInventory[type].push(id);
+ saveRun();
+ const name=type==="hook"?(hookTypes.find(x=>x.id===id)?.name||id):`${id}${{rod:"ロッド",reel:"リール",line:"ライン"}[type]}`;
+ toast(`${name} 作成`);
+}
+
 function renderStorageSubScreen(){
- $("#subScreenBody").innerHTML=`<div id="storageSubInner"></div>`;
- const tmp=document.createElement("div"); tmp.id="drawerContent"; tmp.style.display="none"; document.body.appendChild(tmp);
- renderStorage();
- $("#storageSubInner").innerHTML=tmp.innerHTML;
- tmp.remove();
+ ensureRunShape();
+ let h=materialsHTML();
+ h+=equipmentSummaryHTML();
+ h+=`<div class="previewPanel"><h3>倉庫</h3><p>完成した武器・装備を保管します。釣具は専用所持欄で管理されるため倉庫容量を使用しません。</p></div>`;
+ h+=`<h3>装備中の武器</h3><div class="cardGrid">`;
+ run.weapons.forEach(i=>{const d=weapons.find(x=>x.id===i.id);if(d)h+=itemCard(i,"weapon",d,true)});
+ h+=`</div><h3>装備中の装備</h3><div class="cardGrid">`;
+ run.equipments.forEach(i=>{const d=equipments.find(x=>x.id===i.id);if(d)h+=itemCard(i,"equip",d,true)});
+ h+=`</div><h3>保管中</h3><div class="cardGrid">`;
+ if(!run.storage.length) h+=`<div class="itemCard"><p>倉庫は空です。</p></div>`;
+ run.storage.forEach(i=>{const list=i.type==="weapon"?weapons:equipments;const d=list.find(x=>x.id===i.id);if(d)h+=itemCard(i,i.type,d,false)});
+ h+=`</div>`;
+
+ $("#subScreenBody").innerHTML=h;
  $$("[data-equip]").forEach(b=>b.onclick=()=>{equipFromStorage(b.dataset.equip);renderStorageSubScreen()});
  $$("[data-unequip]").forEach(b=>b.onclick=()=>{unequipItem(b.dataset.unequip);renderStorageSubScreen()});
  $$("[data-disasm]").forEach(b=>b.onclick=()=>{disasmStorage(b.dataset.disasm);renderStorageSubScreen()});
 }
+
 function renderSettingsSubScreen(){
  $("#subScreenBody").innerHTML=`<div class="settingsList panel"><button id="saveExitBtn2">セーブしてメニューへ</button><button id="endRunBtn2" class="danger">ランを終了する</button></div>`;
- $("#saveExitBtn2").onclick=()=>{saveRun();clearInterval(gameTimer);clearInterval(battleTimer);showScreen("menuScreen")};
+ $("#saveExitBtn2").onclick=()=>{
+   closeSubScreen();
+   run.mode="fishing";
+   run.pendingSignal=null;
+   $("#biteIndicator").style.display="none";
+   saveRun();
+   clearInterval(gameTimer);
+   clearInterval(battleTimer);
+   showScreen("menuScreen");
+ };
  $("#endRunBtn2").onclick=()=>endRun();
 }
 function renderRunUpgrade(){
@@ -561,7 +705,7 @@ function renderCraft(){
 function craft(type,id){
  const def=(type==="weapon"?weapons:equipments).find(x=>x.id===id);if(!afford(def.cost))return;Object.entries(def.cost).forEach(([k,v])=>run.materials[k]-=v);
  const inst={type,id,uid:uid()};if(run.storage.length<run.storageCap)run.storage.push(inst);else{toast("倉庫が満杯です");Object.entries(def.cost).forEach(([k,v])=>run.materials[k]+=v);return}
- saveRun();renderCraft();toast(`${def.name} 作成`)
+ saveRun();toast(`${def.name} 作成`)
 }
 function renderStorage(){
  let h=materialsHTML()+`<div class="statRow"><span>倉庫</span><strong>${run.storage.length}/${run.storageCap}</strong></div><h3>装備中の武器</h3><div class="cardGrid">`;
@@ -578,16 +722,16 @@ function equipFromStorage(uidv){
  const idx=run.storage.findIndex(x=>x.uid===uidv);if(idx<0)return;const inst=run.storage[idx],def=(inst.type==="weapon"?weapons:equipments).find(x=>x.id===inst.id);
  if(getLoad()+def.load>run.maxLoad)return toast("装備負荷オーバー");
  const arr=inst.type==="weapon"?run.weapons:run.equipments,slots=inst.type==="weapon"?run.weaponSlots:run.equipSlots;if(arr.length>=slots)return toast("スロット不足");
- run.storage.splice(idx,1);arr.push({id:inst.id,uid:inst.uid});recalcPlayer();saveRun();renderStorage()
+ run.storage.splice(idx,1);arr.push({id:inst.id,uid:inst.uid});recalcPlayer();saveRun()
 }
 function unequipItem(uidv){
  let arr,type;let idx=run.weapons.findIndex(x=>x.uid===uidv);if(idx>=0){arr=run.weapons;type="weapon"}else{idx=run.equipments.findIndex(x=>x.uid===uidv);arr=run.equipments;type="equip"}
- if(idx<0)return;if(run.storage.length>=run.storageCap)return toast("倉庫満杯");const [x]=arr.splice(idx,1);run.storage.push({...x,type});recalcPlayer();saveRun();renderStorage()
+ if(idx<0)return;if(run.storage.length>=run.storageCap)return toast("倉庫満杯");const [x]=arr.splice(idx,1);run.storage.push({...x,type});recalcPlayer();saveRun()
 }
 function disassemble(kind){
  const d=(kind.type==="weapon"?weapons:equipments).find(x=>x.id===kind.id);run.materials.metal+=Math.max(1,Math.floor((d.load||2)*.8));if(Math.random()<.5)run.materials.circuit++;if(Math.random()<.3)run.materials.mech++;
 }
-function disasmStorage(uidv){const idx=run.storage.findIndex(x=>x.uid===uidv);if(idx<0)return;const [x]=run.storage.splice(idx,1);disassemble(x);saveRun();renderStorage();toast("分解しました")}
+function disasmStorage(uidv){const idx=run.storage.findIndex(x=>x.uid===uidv);if(idx<0)return;const [x]=run.storage.splice(idx,1);disassemble(x);saveRun();toast("分解しました")}
 function renderRunSettings(){
  $("#drawerContent").innerHTML=`<div class="settingsList"><button id="saveExitBtn">セーブしてメニューへ</button><button id="endRunBtn" class="danger">ランを終了する</button></div>`;
  $("#saveExitBtn").onclick=()=>{saveRun();clearInterval(gameTimer);clearInterval(battleTimer);showScreen("menuScreen")};
@@ -603,7 +747,7 @@ $("#resultMenuBtn").onclick=()=>showScreen("menuScreen");
 $("#resultUpgradeBtn").onclick=()=>{renderUpgradePanel();showScreen("upgradeScreen")};
 $("#playBtn").onclick=()=>{
  const old=loadRun();
- if(old){run=old;recalcPlayer(); if(run.mode==="battle"){createEnemy();} startGame();}
+ if(old){run=old;ensureRunShape();recalcPlayer();startGame();}
  else{
    const max=meta.upgrades.beacon*2;if(max>0){
      const val=prompt(`開始地点を入力してください（0〜${max} ly / 2刻み推奨）`,String(max));
@@ -625,5 +769,11 @@ for(const [id,key] of [["bgmToggle","bgm"],["seToggle","se"],["shakeToggle","sha
  $("#"+id).checked=meta.settings[key];$("#"+id).onchange=e=>{meta.settings[key]=e.target.checked;saveMeta()}
 }
 renderUpgradeTabs();renderUpgradePanel();updateMetaUI();
-window.addEventListener("beforeunload",()=>{if(run)saveRun();saveMeta()});
+window.addEventListener("beforeunload",()=>{
+ if(run){
+   if(uiPaused && !["battle","salvage"].includes(run.mode)) run.mode="fishing";
+   saveRun();
+ }
+ saveMeta();
+});
 })();

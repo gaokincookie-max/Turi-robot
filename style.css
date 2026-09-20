@@ -113,3 +113,7 @@ button.danger{background:#442029;border-color:#7a3440}
 .majorTabs button.active,.minorTabs button.active{border-color:var(--cyan);color:var(--cyan)}
 .previewPanel{background:#11192e;border:1px solid #2d3856;border-radius:14px;padding:14px;margin-bottom:12px}
 .previewPanel h3{margin:.2rem 0 .5rem}
+
+.loadSummary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+.loadSummary .statRow{min-width:0}
+@media(max-width:520px){.loadSummary{grid-template-columns:1fr}}
