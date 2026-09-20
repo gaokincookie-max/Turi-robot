@@ -117,3 +117,47 @@ button.danger{background:#442029;border-color:#7a3440}
 .loadSummary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
 .loadSummary .statRow{min-width:0}
 @media(max-width:520px){.loadSummary{grid-template-columns:1fr}}
+
+
+/* v7 */
+.subScreen{bottom:64px !important}
+.gameNav{z-index:82 !important}
+.gameNav.locked{pointer-events:none;opacity:.38}
+.playerShip .robot{transform:scale(1.35);transform-origin:50% 100%}
+.biteIndicator{
+  left:calc(50% + 50px)!important; top:21%!important;
+  min-width:54px; padding:8px 11px; font-size:1.65rem!important;
+  text-align:center; background:#f7fbff; color:#11172a!important;
+  border:3px solid #26304a; border-radius:18px;
+  text-shadow:none!important; box-shadow:0 6px 0 #26304a,0 0 18px #5cf2ff55;
+}
+.biteIndicator:after{
+  content:""; position:absolute; left:12px; bottom:-13px;
+  width:0;height:0;border-left:10px solid transparent;border-right:4px solid transparent;border-top:14px solid #26304a;
+}
+.warningBanner{
+  position:absolute!important; inset:22% 0 auto 0!important; left:0!important; top:22%!important;
+  transform:none!important; padding:24px 10px!important; border-left:0!important;border-right:0!important;
+  text-align:center; background:#5b0716dd!important; z-index:66!important;
+}
+.warningBanner strong{display:block;font-size:clamp(2rem,8vw,4.5rem);letter-spacing:.12em}
+.warningBanner span{display:block;font-size:.9rem;letter-spacing:.22em;margin-top:8px}
+
+.lootReveal{display:none;position:absolute;inset:0;z-index:72;background:#02040bd9;align-items:center;justify-content:center;padding:18px}
+.lootReveal.active{display:flex}
+.lootCard{position:relative;width:min(380px,94%);background:#10182c;border:2px solid #405171;border-radius:18px;padding:24px;text-align:center;box-shadow:0 0 32px #5cf2ff22}
+.lootIcon{font-size:4.8rem;line-height:1;margin:10px 0 16px;filter:drop-shadow(0 0 10px #5cf2ff55)}
+.lootKind{font-size:.72rem;letter-spacing:.22em;color:var(--muted)}
+.lootCard h2{font-size:1.45rem;margin:.5rem 0}
+.lootCard p{color:var(--muted);min-height:1.3em}
+.lootNew{display:none;position:absolute;right:14px;top:12px;background:var(--yellow);color:#151515;font-weight:900;padding:5px 10px;border-radius:999px;transform:rotate(5deg)}
+.lootNew.active{display:block}
+
+.globalModal{display:none;position:fixed;inset:0;z-index:150;background:#02040bdd;align-items:center;justify-content:center;padding:18px}
+.globalModal.active{display:flex}
+.globalModalCard{width:min(420px,96%);background:#10172a;border:1px solid #405071;border-radius:18px;padding:18px;display:grid;gap:10px;text-align:center}
+.globalModalCard h2{margin:.2rem 0}.globalModalCard p{color:var(--muted)}
+
+.blueprintProgress{margin-top:8px;padding:7px 9px;border:1px solid #31405e;border-radius:8px;background:#0e1527;font-size:.72rem;color:#b7c2df}
+.blueprintProgress.known{border-color:#7b6b30;color:#ffe283}
+.blueprintProgress.done{border-color:#377a62;color:#84ffc6}

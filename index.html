@@ -103,7 +103,7 @@
 
     <div id="gameViewport" class="gameViewport">
       <div class="stars moving"></div>
-      <div id="warningBanner" class="warningBanner">⚠ PIRATE SIGNAL ⚠</div>
+      <div id="warningBanner" class="warningBanner"><strong>WARNING</strong><span>PIRATE SIGNAL DETECTED</span></div>
 
       <div id="fishingScene" class="modeLayer active">
         <div class="ship playerShip">
@@ -149,6 +149,18 @@
         <div id="salvageParts" class="salvageParts"></div>
       </div>
 
+
+      <div id="lootReveal" class="lootReveal">
+        <div class="lootCard">
+          <div id="lootNew" class="lootNew">NEW</div>
+          <div id="lootIcon" class="lootIcon">⚙</div>
+          <div id="lootKind" class="lootKind">SALVAGE</div>
+          <h2 id="lootName">金属片</h2>
+          <p id="lootDetail"></p>
+          <button id="lootOkBtn" class="primary">OK</button>
+        </div>
+      </div>
+
       <div id="fishingMinigame" class="fishingMinigame">
         <div class="fishPanel">
           <div class="fishTop">
@@ -163,7 +175,7 @@
             <div class="progressBar"><div id="fishProgress"></div></div>
           </div>
           <button id="reelBtn" class="primary reelBtn">巻く！</button>
-          <small>1タップで大きく上昇。押しっぱなしでは上がらず、何もしないと下降。成功エリア内だけ回収が進む</small>
+          <small>タップで大きく上昇。長押しすると下方向へ強く引かれる。何もしなくても徐々に下降</small>
         </div>
       </div>
     </div>
@@ -211,6 +223,17 @@
       <button id="resultMenuBtn">メニューへ</button>
     </div>
   </section>
+
+
+  <div id="saveChoiceModal" class="globalModal">
+    <div class="globalModalCard">
+      <h2>航行データがあります</h2>
+      <p id="saveChoiceInfo">前回の航行を続けますか？</p>
+      <button id="continueRunBtn" class="primary">続行</button>
+      <button id="finishSavedRunBtn">このランを終了</button>
+      <button id="cancelSaveChoiceBtn">キャンセル</button>
+    </div>
+  </div>
 
   <div id="toast" class="toast"></div>
 </div>
