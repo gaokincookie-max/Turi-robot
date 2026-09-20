@@ -331,9 +331,10 @@ function startFishing(salvage){
  $("#fishingMinigame").classList.add("active");
  $("#fishTitle").textContent=salvage?"SALVAGE HOOK":"SIGNAL "+(run.pendingCatch?.signal||"!");
  let line=.45,zone=.48,dir=1,progress=0,last=performance.now();
- let tapBoost=0,holding=false,holdStarted=0;
+ let tapBoost=0,holding=false,holdStarted=0,longHold=false;
  const mods=rodMod(), reelPenalty=1-Math.min(.45,.05*Math.sqrt(meta.upgrades.reel||0));
  const btn=$("#reelBtn");
+ const HOLD_THRESHOLD=220;
 
  btn.onclick=null;
  let tapLocked=false;
@@ -342,13 +343,24 @@ function startFishing(salvage){
    if(tapLocked)return;
    tapLocked=true;
    holding=true;
+   longHold=false;
    holdStarted=performance.now();
-   tapBoost=Math.min(.25,tapBoost+0.14+mods.heavy*0.24);
+   // 押した瞬間には一切上昇しない。
  };
- const releaseTap=()=>{tapLocked=false;holding=false;holdStarted=0;};
- btn.onpointerup=releaseTap;
- btn.onpointercancel=releaseTap;
- btn.onpointerleave=releaseTap;
+ btn.onpointerup=(e)=>{
+   e.preventDefault();
+   if(!tapLocked)return;
+   const held=performance.now()-holdStarted;
+   // 短押しの時だけ、離した瞬間に上昇。
+   // 長押し判定に入った場合は、離しても上昇しない。
+   if(held<HOLD_THRESHOLD && !longHold){
+     tapBoost=Math.min(.25,tapBoost+0.14+mods.heavy*0.24);
+   }
+   tapLocked=false;holding=false;holdStarted=0;longHold=false;
+ };
+ const cancelHold=()=>{tapLocked=false;holding=false;holdStarted=0;longHold=false;};
+ btn.onpointercancel=cancelHold;
+ btn.onpointerleave=cancelHold;
 
  cancelAnimationFrame(fishingAnim);
  function loop(t){
@@ -364,8 +376,12 @@ function startFishing(salvage){
      line -= applied;
      tapBoost -= applied;
    }
-   // 長押しを約0.22秒続けると、ラインを強く下へ引く。
-   if(holding && holdStarted && t-holdStarted>220) line += dt*0.72;
+   // 長押し閾値を超えたら下方向へ強く引く。
+   // この時点で長押し扱いになり、離しても上昇しない。
+   if(holding && holdStarted && t-holdStarted>HOLD_THRESHOLD){
+     longHold=true;
+     line += dt*0.72;
+   }
    line=clamp(line,.01,.97);
 
    const width=.23+mods.stable;
@@ -701,6 +717,37 @@ function renderUpgradeSubScreen(major="ship",minor=null){
  $$("[data-sethook]").forEach(b=>b.onclick=()=>{run.rod.hook=b.dataset.sethook;saveRun();renderUpgradeSubScreen("fishing","hook")});
  $$("[data-setrod]").forEach(b=>b.onclick=()=>{const [k,v]=b.dataset.setrod.split(":");run.rod[k]=v;saveRun();renderUpgradeSubScreen("fishing",k)});
 }
+
+function materialIcon(mat){
+ return {metal:"▰",circuit:"▦",mech:"⚙",cell:"◆"}[mat]||"◇";
+}
+function itemIconHTML(type,id){
+ let symbol="⚙";
+ if(type==="weapon"){
+   const w=weapons.find(x=>x.id===id);
+   symbol=w?.active?"✦":"▰━";
+ }else if(type==="equip"){
+   symbol="⬡";
+ }else if(type==="rod"){
+   symbol="╱";
+ }else if(type==="reel"){
+   symbol="◉";
+ }else if(type==="line"){
+   symbol="⌁";
+ }else if(type==="hook"){
+   symbol="J";
+ }
+ return `<div class="craftIllustration ${type}">${symbol}</div>`;
+}
+function materialCostVisual(cost){
+ if(!cost)return "";
+ return `<div class="materialCostVisual">${Object.entries(cost).map(([k,v])=>`
+   <div class="materialCostItem">
+     <span class="materialIcon">${materialIcon(k)}</span>
+     <span class="materialLabel">${matName(k)}</span>
+     <strong>×${v}</strong>
+   </div>`).join("")}</div>`;
+}
 function renderCraftSubScreen(category="weapon"){
  ensureRunShape();
  const labels={weapon:"武器",equip:"装備",rod:"ロッド",reel:"リール",line:"ライン",hook:"フック"};
@@ -709,7 +756,7 @@ function renderCraftSubScreen(category="weapon"){
 
  if(category==="weapon" || category==="equip"){
    const list=category==="weapon"?weapons:equipments;
-   h+=`<div class="previewPanel"><h3>${category==="weapon"?"武器":"装備"}作成</h3><p>一度発見すると名前と解析進捗が表示され、規定回数の入手で製作可能になります。</p></div><div class="cardGrid">`;
+   h+=`<div class="previewPanel"><h3>${category==="weapon"?"武器":"装備"}作成</h3><p>発見済みの設計データを解析し、規定回数に達したものを製作できます。</p></div><div class="cardGrid craftGrid">`;
    for(const d of list){
      const unlocked=isBlueprintUnlocked(category,d.id);
      const count=blueprintCount(category,d.id);
@@ -722,31 +769,45 @@ function renderCraftSubScreen(category="weapon"){
        : known
          ? `<div class="blueprintProgress known">解析 ${count}/${need} ・ あと${remain}回入手</div>`
          : `<div class="blueprintProgress">未発見</div>`;
-     h+=`<div class="itemCard"><h3>${title}</h3><p>${desc}</p>${known?`<p>${category==="weapon"?`ATK ${d.atk} / `:""}負荷 ${d.load}</p>`:""}${prog}
-       ${unlocked?`<p>${costText(d.cost)}</p><div class="actions"><button data-craftitem="${category}:${d.id}" ${afford(d.cost)&&run.storage.length<run.storageCap?"":"disabled"}>作成</button></div>`:""}
+     h+=`<div class="itemCard craftCard">
+       ${known?itemIconHTML(category,d.id):`<div class="craftIllustration unknown">?</div>`}
+       <h3>${title}</h3>
+       <p>${desc}</p>
+       ${known?`<p>${category==="weapon"?`ATK ${d.atk} / `:""}負荷 ${d.load}</p>`:""}
+       ${prog}
+       ${unlocked?`${materialCostVisual(d.cost)}<div class="actions"><button data-craftitem="${category}:${d.id}" ${afford(d.cost)&&run.storage.length<run.storageCap?"":"disabled"}>作成</button></div>`:""}
      </div>`;
    }
    h+=`</div>`;
  } else if(["rod","reel","line"].includes(category)){
    const label=labels[category];
-   h+=`<div class="previewPanel"><h3>${label}作成</h3><p>釣具の設計図は最初から全開放です。</p></div><div class="cardGrid">`;
+   h+=`<div class="previewPanel"><h3>${label}作成</h3><p>釣具の設計図は最初から全開放です。</p></div><div class="cardGrid craftGrid">`;
    for(const type of rodTypes){
      if(type==="標準"){
-       h+=`<div class="itemCard"><h3>標準${label}</h3><p>初期所持。</p><div class="actions"><button disabled>所持済み</button></div></div>`;continue;
+       h+=`<div class="itemCard craftCard">${itemIconHTML(category,type)}<h3>標準${label}</h3><p>初期所持。</p><div class="actions"><button disabled>所持済み</button></div></div>`;
+       continue;
      }
      const cost=fishingRecipes[category]?.[type];
      const owned=fishingOwned(category,type);
      const desc=type==="安定"?"成功ゾーンへの追従が楽になる":type==="高速"?"回収進捗が速くなる":type==="重量"?"タップ上昇力が強くなる":"標準性能";
-     h+=`<div class="itemCard"><h3>${type}${label}</h3><p>${desc}</p><p>${costText(cost)}</p>
-       <div class="actions"><button data-craftfish="${category}:${type}" ${owned||!afford(cost)?"disabled":""}>${owned?"所持済み":"作成"}</button></div></div>`;
+     h+=`<div class="itemCard craftCard">${itemIconHTML(category,type)}<h3>${type}${label}</h3><p>${desc}</p>
+       ${materialCostVisual(cost)}
+       <div class="actions"><button data-craftfish="${category}:${type}" ${owned||!afford(cost)?"disabled":""}>${owned?"所持済み":"作成"}</button></div>
+     </div>`;
    }
    h+=`</div>`;
  } else {
-   h+=`<div class="previewPanel"><h3>フック作成</h3><p>フックの設計図は最初から全開放です。</p></div><div class="cardGrid">`;
+   h+=`<div class="previewPanel"><h3>フック作成</h3><p>フックの設計図は最初から全開放です。</p></div><div class="cardGrid craftGrid">`;
    for(const hook of hookTypes){
-     if(hook.id==="standard"){h+=`<div class="itemCard"><h3>${hook.name}</h3><p>${hook.desc}</p><div class="actions"><button disabled>所持済み</button></div></div>`;continue;}
+     if(hook.id==="standard"){
+       h+=`<div class="itemCard craftCard">${itemIconHTML("hook",hook.id)}<h3>${hook.name}</h3><p>${hook.desc}</p><div class="actions"><button disabled>所持済み</button></div></div>`;
+       continue;
+     }
      const cost=fishingRecipes.hook?.[hook.id],owned=fishingOwned("hook",hook.id);
-     h+=`<div class="itemCard"><h3>${hook.name}</h3><p>${hook.desc}</p><p>${costText(cost)}</p><div class="actions"><button data-craftfish="hook:${hook.id}" ${owned||!afford(cost)?"disabled":""}>${owned?"所持済み":"作成"}</button></div></div>`;
+     h+=`<div class="itemCard craftCard">${itemIconHTML("hook",hook.id)}<h3>${hook.name}</h3><p>${hook.desc}</p>
+       ${materialCostVisual(cost)}
+       <div class="actions"><button data-craftfish="hook:${hook.id}" ${owned||!afford(cost)?"disabled":""}>${owned?"所持済み":"作成"}</button></div>
+     </div>`;
    }
    h+=`</div>`;
  }

@@ -161,3 +161,21 @@ button.danger{background:#442029;border-color:#7a3440}
 .blueprintProgress{margin-top:8px;padding:7px 9px;border:1px solid #31405e;border-radius:8px;background:#0e1527;font-size:.72rem;color:#b7c2df}
 .blueprintProgress.known{border-color:#7b6b30;color:#ffe283}
 .blueprintProgress.done{border-color:#377a62;color:#84ffc6}
+
+.craftGrid .craftCard{display:flex;flex-direction:column;align-items:stretch}
+.craftIllustration{
+  height:92px;border-radius:12px;border:1px solid #34425f;background:
+  radial-gradient(circle at 50% 35%,#1b2947,#0d1426 70%);
+  display:flex;align-items:center;justify-content:center;font-size:3rem;
+  margin-bottom:10px;color:#dce8ff;text-shadow:0 0 10px #5cf2ff66;
+}
+.craftIllustration.weapon{color:#ffcf68}.craftIllustration.equip{color:#8cffb3}
+.craftIllustration.rod,.craftIllustration.reel,.craftIllustration.line,.craftIllustration.hook{color:#75e8ff}
+.craftIllustration.unknown{color:#66728d}
+.materialCostVisual{display:grid;gap:6px;margin:10px 0}
+.materialCostItem{
+  display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:7px;
+  padding:7px 9px;border-radius:9px;background:#0e1527;border:1px solid #2c3957
+}
+.materialIcon{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;background:#182440;color:#dce7ff;font-size:1rem}
+.materialLabel{font-size:.75rem;color:#b9c4df}.materialCostItem strong{font-size:.82rem}
