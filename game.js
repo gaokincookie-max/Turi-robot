@@ -188,7 +188,7 @@ function newRun(startDistance=null){
  run={
    distance:start,hp:100,maxHp:100,shipLevel:1,maxLoad:10,weaponSlots:2,equipSlots:2,storageCap:4,
    materials:{metal:5,circuit:3,mech:2,cell:1},
-   weapons:[{id:"pulse",uid:uid()}],equipments:[{id:"armorplate",uid:uid()}],storage:[],
+   weapons:[{id:"pulse",uid:uid(),lvl:1}],equipments:[{id:"armorplate",uid:uid(),lvl:1}],storage:[],
    rod:{rod:"標準",reel:"標準",line:"標準",hook:"standard"},
    fishingInventory:{rod:["標準"],reel:["標準"],line:["標準"],hook:["standard"]},
    kills:0,catches:0,tokensEarned:0,
@@ -417,7 +417,7 @@ function finishFishing(success,salvage){
    detail="クラフトや機体強化に使用できます。";
  }else{
    isNew=markMachineDiscovered(c.kind.type,c.kind.id);
-   const inst={id:c.kind.id,uid:uid(),type:c.kind.type};
+   const inst={id:c.kind.id,uid:uid(),type:c.kind.type,lvl:1};
    if(run.storage.length<run.storageCap)run.storage.push(inst);
    else disassemble(c.kind);
    const bp=advanceBlueprint(c.kind);
@@ -594,7 +594,7 @@ function finishSalvage(success){
      detail="海賊船から回収した素材。";
    }else{
      isNew=markMachineDiscovered(s.kind.type,s.kind.id);
-     const inst={id:s.kind.id,uid:uid(),type:s.kind.type};
+     const inst={id:s.kind.id,uid:uid(),type:s.kind.type,lvl:1};
      if(run.storage.length<run.storageCap)run.storage.push(inst);else disassemble(s.kind);
      const bp=advanceBlueprint(s.kind);
      detail=bp.unlockedNow?"設計図完成！ 製作可能になりました。":
@@ -852,6 +852,7 @@ function renderSettingsSubScreen(){
  $("#subScreenBody").innerHTML=`<div class="settingsList panel"><button id="saveExitBtn2">セーブしてメニューへ</button><button id="endRunBtn2" class="danger">ランを終了する</button></div>`;
  $("#saveExitBtn2").onclick=()=>{
    closeSubScreen();
+   closeActionModal();
    run.mode="fishing";
    run.pendingSignal=null;
    if(run.pendingCatch)run.pendingCatch=null;
@@ -891,7 +892,7 @@ function renderCraft(){
 }
 function craft(type,id){
  const def=(type==="weapon"?weapons:equipments).find(x=>x.id===id);if(!afford(def.cost))return;Object.entries(def.cost).forEach(([k,v])=>run.materials[k]-=v);
- const inst={type,id,uid:uid()};if(run.storage.length<run.storageCap)run.storage.push(inst);else{toast("倉庫が満杯です");Object.entries(def.cost).forEach(([k,v])=>run.materials[k]+=v);return}
+ const inst={type,id,uid:uid(),lvl:1};if(run.storage.length<run.storageCap)run.storage.push(inst);else{toast("倉庫が満杯です");Object.entries(def.cost).forEach(([k,v])=>run.materials[k]+=v);return}
  saveRun();toast(`${def.name} 作成`)
 }
 function renderStorage(){
@@ -923,6 +924,301 @@ function renderRunSettings(){
  $("#drawerContent").innerHTML=`<div class="settingsList"><button id="saveExitBtn">セーブしてメニューへ</button><button id="endRunBtn" class="danger">ランを終了する</button></div>`;
  $("#saveExitBtn").onclick=()=>{saveRun();clearInterval(gameTimer);clearInterval(battleTimer);showScreen("menuScreen")};
  $("#endRunBtn").onclick=()=>endRun();
+}
+
+
+/* ===== v9 maintenance refresh ===== */
+let maintState={major:"ship",slot:null};
+
+function ensureLevels(){
+  if(!run)return;
+  for(const arr of [run.weapons||[], run.equipments||[], run.storage||[]]){
+    arr.forEach(inst=>{ if(inst && !inst.lvl) inst.lvl=1; });
+  }
+}
+function weaponLevelMult(inst){ return 1 + 0.16*Math.max(0,(inst?.lvl||1)-1); }
+function equipLevelMult(inst){ return 1 + 0.18*Math.max(0,(inst?.lvl||1)-1); }
+
+function recalcPlayer(){
+ if(!run)return;
+ ensureRunShape(); ensureLevels();
+ const hullBonus=1+0.08*Math.sqrt(meta.upgrades.hull||0);
+ let baseHp=(100+(run.shipLevel-1)*55)*hullBonus;
+ let hpBonus=0,shield=0,repair=0,atkMult=0,fireRate=0,qte=0,partBonus=0;
+ for(const inst of run.equipments){
+   const e=equipments.find(x=>x.id===inst.id); if(!e)continue;
+   const mult=equipLevelMult(inst);
+   hpBonus+=(e.hp||0)*mult;
+   shield+=(e.shield||0)*mult;
+   repair+=(e.repair||0)*mult;
+   atkMult+=(e.atkMult||0)*mult;
+   fireRate+=(e.fireRate||0)*mult;
+   qte+=(e.qte||0)*mult;
+   partBonus+=(e.partBonus||0)*mult;
+ }
+ run.maxHp=Math.round(baseHp+hpBonus);
+ if(run.hp>run.maxHp)run.hp=run.maxHp;
+ if(!run.hp)run.hp=run.maxHp;
+ run.mods={shield,repair,atkMult,fireRate,qte,partBonus};
+ run.maxLoad=10+(run.shipLevel-1)*5;
+ run.weaponSlots=2+Math.floor((run.shipLevel-1)/1);
+ run.equipSlots=2+Math.floor((run.shipLevel-1)/1);
+ run.storageCap=4+(run.shipLevel-1)*2+Math.floor((meta.upgrades.storage||0)/2);
+ updateHUD();
+}
+function playerAtk(){
+  ensureLevels();
+  let atk=run.weapons.reduce((s,i)=>{
+    const d=weapons.find(x=>x.id===i.id);
+    return s + ((d?.atk||0) * weaponLevelMult(i));
+  },0);
+  atk*=1+0.06*Math.sqrt(meta.upgrades.fire||0)+(run.mods?.atkMult||0);
+  return atk;
+}
+function prettyItemIcon(type,id){
+ let symbol="⚙";
+ if(type==="weapon"){ const w=weapons.find(x=>x.id===id); symbol=w?.active?"✦":"▰━"; }
+ else if(type==="equip"){ symbol="⬡"; }
+ else if(type==="rod"){ symbol="╱"; }
+ else if(type==="reel"){ symbol="◉"; }
+ else if(type==="line"){ symbol="⌁"; }
+ else if(type==="hook"){ symbol="J"; }
+ return symbol;
+}
+function getDef(type,id){ return (type==="weapon"?weapons:equipments).find(x=>x.id===id); }
+function instanceStatLine(type,inst){
+  const d=getDef(type,inst.id); if(!d) return "";
+  if(type==="weapon") return `ATK ${Math.round(d.atk*weaponLevelMult(inst))} / 負荷 ${d.load}` + (d.active?` / ACT ${d.active.name}`:"");
+  return `負荷 ${d.load}` + (d.hp?` / HP +${Math.round(d.hp*equipLevelMult(inst))}`:"");
+}
+function formatItemMeta(type,inst){
+  const d=getDef(type,inst.id); if(!d) return [];
+  if(type==="weapon"){
+    const arr=[`Lv.${inst.lvl||1}`,`ATK ${Math.round(d.atk*weaponLevelMult(inst))}`,`負荷 ${d.load}`];
+    if(d.active) arr.push(`ACT ${d.active.name}`);
+    return arr;
+  }
+  const arr=[`Lv.${inst.lvl||1}`,`負荷 ${d.load}`];
+  if(d.hp) arr.push(`HP +${Math.round(d.hp*equipLevelMult(inst))}`);
+  if(d.shield) arr.push(`軽減 +${Math.round((d.shield*equipLevelMult(inst))*100)}%`);
+  if(d.atkMult) arr.push(`火力 +${Math.round((d.atkMult*equipLevelMult(inst))*100)}%`);
+  if(d.repair) arr.push(`自動修理`);
+  return arr;
+}
+function shipUpgradeCostObj(){
+  const lv=run.shipLevel||1;
+  return { metal:6+lv*2, mech:Math.max(0,lv-1), circuit:Math.max(0,Math.floor((lv-1)/2)) };
+}
+function itemUpgradeCost(type,inst){
+  const d=getDef(type,inst.id); const lv=inst.lvl||1;
+  if(type==="weapon"){
+    return { metal:Math.max(2,Math.ceil(d.load*0.9)+lv), circuit:Math.max(0,Math.floor(d.atk/5)+Math.floor((lv+1)/2)), mech:d.load>=5?1:0, cell:d.active?Math.floor((lv-1)/2):0 };
+  }
+  return { metal:Math.max(1,Math.ceil(d.load*0.75)+lv-1), mech:Math.max(0,Math.ceil(d.load/3)+Math.floor((lv-1)/2)), circuit:(d.shield||d.atkMult)?1+Math.floor((lv-1)/2):0, cell:(d.shield&&lv>=3)?1:0 };
+}
+function normalizeCost(cost){ const out={}; Object.entries(cost).forEach(([k,v])=>{ if(v>0) out[k]=v; }); return out; }
+function costAfford(cost){ return Object.entries(cost).every(([k,v])=>(run.materials[k]||0)>=v); }
+function spendCost(cost){ Object.entries(cost).forEach(([k,v])=>run.materials[k]-=v); }
+function materialsStripHTML(){
+  return `<div class="materialStrip">${Object.entries(run.materials).map(([k,v])=>`
+    <div class="materialMini"><span class="materialIcon">${materialIcon(k)}</span><small>${matName(k)}</small><strong>${v}</strong></div>`).join("")}</div>`;
+}
+function materialNeedListHTML(cost){
+  const safe=normalizeCost(cost||{});
+  return `<div class="materialNeedGrid">${Object.entries(safe).map(([k,v])=>{
+    const own=run.materials[k]||0, ok=own>=v;
+    return `<div class="materialNeed ${ok?"ok":"ng"}"><span class="materialIcon">${materialIcon(k)}</span><em>${matName(k)}</em><strong>${own} / ${v}</strong></div>`;
+  }).join("")}</div>`;
+}
+function loadPanelHTML(){
+  const ratio=Math.min(1,getLoad()/Math.max(1,run.maxLoad));
+  return `<div><div class="statRow"><span>過負荷ゲージ</span><strong>${getLoad()} / ${run.maxLoad}</strong></div><div class="loadMeterBar"><div style="width:${ratio*100}%"></div></div><div class="statRow" style="margin-top:8px"><span>武器 / 装備 / 倉庫</span><strong>${run.weapons.length}/${run.weaponSlots} ・ ${run.equipments.length}/${run.equipSlots} ・ ${run.storage.length}/${run.storageCap}</strong></div></div>`;
+}
+function renderShipSchematic(){
+  let left='', right='';
+  for(let i=0;i<run.weaponSlots;i++){
+    const inst=run.weapons[i], title=inst?`${itemName({type:"weapon",id:inst.id})} Lv.${inst.lvl||1}`:"空き";
+    left += `<button class="slotButton ${inst?"":"empty"} ${(maintState.slot===`weapon:${i}`)?"active":""}" data-maint-slot="weapon:${i}"><small>武器スロット ${i+1}</small><strong>${title}</strong></button>`;
+  }
+  for(let i=0;i<run.equipSlots;i++){
+    const inst=run.equipments[i], title=inst?`${itemName({type:"equip",id:inst.id})} Lv.${inst.lvl||1}`:"空き";
+    right += `<button class="slotButton ${inst?"":"empty"} ${(maintState.slot===`equip:${i}`)?"active":""}" data-maint-slot="equip:${i}"><small>装備スロット ${i+1}</small><strong>${title}</strong></button>`;
+  }
+  return `<div class="maintPanel">${loadPanelHTML()}<div class="maintShipArea"><div class="slotColumn">${left}</div><div class="shipCenterCore"><div class="shipBlueprint"></div><button class="slotButton coreSlotButton ${(maintState.slot==="hull")?"active":""}" data-maint-slot="hull"><small>機体コア</small><strong>機体 Mk.${run.shipLevel}</strong></button></div><div class="slotColumn">${right}</div></div></div>`;
+}
+function renderFishingSchematic(){
+  const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod"],["reel","リール",run.rod.reel+"リール","gear-slot-reel"],["line","ライン",run.rod.line+"ライン","gear-slot-line"],["hook","フック",(hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック"),"gear-slot-hook"]];
+  return `<div class="maintPanel">${materialsStripHTML()}<div class="gearBlueprint"><div class="rodPath"></div>${parts.map(([k,lbl,title,cls])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><small>${lbl}</small><strong>${title}</strong></button>`).join("")}</div></div>`;
+}
+function currentCardHTML(type,inst,slotIndex){
+  const d=getDef(type,inst.id), cost=normalizeCost(itemUpgradeCost(type,inst));
+  return `<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(type,inst.id)}</div><div><div class="detailSectionTitle" style="margin:0">${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta">${formatItemMeta(type,inst).map(x=>`<span class="metaChip">${x}</span>`).join("")}</div><div class="detailSectionTitle">強化コスト</div>${materialNeedListHTML(cost)}<div class="actions"><button data-upgrade-inst="${type}:${slotIndex}" class="primary" ${costAfford(cost)?"":"disabled"}>強化</button><button data-unequip-slot="${type}:${slotIndex}">外す</button></div></div>`;
+}
+function hullCardHTML(){
+  const cost=normalizeCost(shipUpgradeCostObj());
+  return `<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">🛸</div><div><div class="detailSectionTitle" style="margin:0">機体 Mk.${run.shipLevel}</div><div style="font-size:.8rem;color:#aac0de">船体の耐久・スロット・積載を拡張します。</div></div></div><div class="detailMeta"><span class="metaChip">HP ${run.maxHp}</span><span class="metaChip">最大負荷 ${run.maxLoad}</span><span class="metaChip">武器枠 ${run.weaponSlots}</span><span class="metaChip">装備枠 ${run.equipSlots}</span><span class="metaChip">倉庫 ${run.storage.length}/${run.storageCap}</span></div><div class="detailSectionTitle">次の強化コスト</div>${materialNeedListHTML(cost)}<div class="actions"><button id="shipUpgradeBtnV9" class="primary" ${costAfford(cost)?"":"disabled"}>船体強化</button></div></div>`;
+}
+function simpleStorageCardHTML(inst,type,slotIndex){
+  const d=getDef(type,inst.id);
+  return `<div class="simpleCard"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(type,inst.id)}</div><div><h4>${d.name}</h4><p>Lv.${inst.lvl||1} ・ ${instanceStatLine(type,inst)}</p></div></div><button data-open-owned="${type}:${inst.uid}:${slotIndex}">詳細</button></div>`;
+}
+function simpleCraftCardHTML(type,d,slotIndex,mode){
+  const count=blueprintCount(type,d.id), unlocked=isBlueprintUnlocked(type,d.id), need=blueprintNeed(d), remain=Math.max(0,need-count);
+  let sub = type==="weapon" ? `ATK ${d.atk} / 負荷 ${d.load}` : `負荷 ${d.load}`;
+  if(mode==="lockedKnown") sub += ` ・ 解析 ${count}/${need}`;
+  return `<div class="simpleCard"><div class="simpleCardHead"><div class="simpleCardIcon">${mode==="unknown"?"?":prettyItemIcon(type,d.id)}</div><div><h4>${mode==="unknown"?"？？？？":d.name}</h4><p>${mode==="unknown"?"未発見":d.desc}</p></div></div>${mode==="unknown"?"":`<div class="miniMeta"><span>${sub}</span>${mode==="lockedKnown"?`<span>あと${remain}回入手</span>`:""}</div><button data-open-craft="${type}:${d.id}:${slotIndex}">詳細</button>`}</div>`;
+}
+function fishingOwnedList(type){ return (run.fishingInventory[type]||[]).filter(x=>type==="hook"?x!==run.rod.hook:x!==run.rod[type]); }
+function fishingCurrentCardHTML(type){
+  const current = type==="hook" ? (hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック") : `${run.rod[type]}${{rod:"ロッド",reel:"リール",line:"ライン"}[type]}`;
+  const desc = type==="hook" ? (hookTypes.find(x=>x.id===run.rod.hook)?.desc||"") : ({rod:"釣りの主軸となる竿本体。",reel:"回収時の操作感を左右する機構。",line:"釣りラインの安定性を調整します。"}[type]||"");
+  return `<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(type,type==="hook"?run.rod.hook:run.rod[type])}</div><div><div class="detailSectionTitle" style="margin:0">${current}</div><div style="font-size:.8rem;color:#aac0de">${desc}</div></div></div><div class="detailMeta"><span class="metaChip">現在装備</span><span class="metaChip">${type==="hook"?"釣果傾向変更":"釣り操作補正"}</span></div></div>`;
+}
+function fishingOwnedCardHTML(type,id){
+  const name = type==="hook" ? (hookTypes.find(x=>x.id===id)?.name||id) : `${id}${{rod:"ロッド",reel:"リール",line:"ライン"}[type]}`;
+  const desc = type==="hook" ? (hookTypes.find(x=>x.id===id)?.desc||"") : (id==="安定"?"成功ゾーンへの追従が楽になる":id==="高速"?"回収進捗が速くなる":id==="重量"?"タップ上昇力が強くなる":"標準性能");
+  return `<div class="simpleCard"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(type,id)}</div><div><h4>${name}</h4><p>${desc}</p></div></div><button data-open-fishing-owned="${type}:${id}">詳細</button></div>`;
+}
+function fishingCraftCardHTML(type,id,cost){
+  const name = type==="hook" ? (hookTypes.find(x=>x.id===id)?.name||id) : `${id}${{rod:"ロッド",reel:"リール",line:"ライン"}[type]}`;
+  const desc = type==="hook" ? (hookTypes.find(x=>x.id===id)?.desc||"") : (id==="安定"?"成功ゾーンへの追従が楽になる":id==="高速"?"回収進捗が速くなる":id==="重量"?"タップ上昇力が強くなる":"標準性能");
+  return `<div class="simpleCard"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(type,id)}</div><div><h4>${name}</h4><p>${desc}</p></div></div><button data-open-fishing-craft="${type}:${id}">詳細</button></div>`;
+}
+function renderShipDetail(slot){
+  if(slot==="hull") return hullCardHTML();
+  const [type, idxStr] = slot.split(":"), idx=Number(idxStr), current = (type==="weapon"?run.weapons:run.equipments)[idx];
+  let h=`<div class="maintPanel"><h3 class="detailSectionTitle">${type==="weapon"?"武器":"装備"}スロット ${idx+1}</h3>`;
+  h += current ? currentCardHTML(type,current,idx) : `<div class="bigCurrentCard"><div class="detailSectionTitle">現在装備</div><p class="emptyText">このスロットは空です。所持中の装備や作成可能な装備から選べます。</p></div>`;
+  const owned = run.storage.filter(x=>x.type===type);
+  h += `<div class="sectionBlock"><h4 class="detailSectionTitle">所持中</h4>${owned.length?`<div class="detailList">${owned.map(inst=>simpleStorageCardHTML(inst,type,idx)).join("")}</div>`:`<p class="emptyText">このカテゴリの保管品はありません。</p>`}</div>`;
+  const defs = (type==="weapon"?weapons:equipments);
+  const craftable = defs.filter(d=>isBlueprintUnlocked(type,d.id) && afford(d.cost));
+  const insufficient = defs.filter(d=>isBlueprintUnlocked(type,d.id) && !afford(d.cost));
+  const analyzing = defs.filter(d=>!isBlueprintUnlocked(type,d.id) && blueprintCount(type,d.id)>0);
+  const unknown = defs.filter(d=>!isBlueprintUnlocked(type,d.id) && blueprintCount(type,d.id)===0);
+  const sec=(title,list,mode)=>`<div class="sectionBlock"><h4 class="detailSectionTitle ${mode==='unknown'?'mutedSectionTitle':''}">${title}</h4>${list.length?`<div class="detailList">${list.map(d=>simpleCraftCardHTML(type,d,idx,mode)).join("")}</div>`:`<p class="emptyText">なし</p>`}</div>`;
+  h += sec("今すぐ作成可能", craftable, "craftable");
+  h += sec("素材不足", insufficient, "insufficient");
+  h += sec("解析中", analyzing, "lockedKnown");
+  h += sec("未発見", unknown, "unknown");
+  h += `</div>`;
+  return h;
+}
+function renderFishingDetail(slot){
+  const type=slot||"rod";
+  let h=`<div class="maintPanel"><h3 class="detailSectionTitle">${{rod:"ロッド",reel:"リール",line:"ライン",hook:"フック"}[type]}</h3>`;
+  h += fishingCurrentCardHTML(type);
+  const owned = fishingOwnedList(type);
+  h += `<div class="sectionBlock"><h4 class="detailSectionTitle">所持中</h4>${owned.length?`<div class="detailList">${owned.map(id=>fishingOwnedCardHTML(type,id)).join("")}</div>`:`<p class="emptyText">切り替え可能な所持品はありません。</p>`}</div>`;
+  const source = type==="hook" ? hookTypes.map(x=>x.id) : rodTypes;
+  const craftable = [], insufficient = [];
+  source.forEach(id=>{
+    const base=(type==="hook"?id==="standard":id==="標準");
+    if(base || fishingOwned(type,id)) return;
+    const cost=fishingRecipes[type]?.[id]; if(!cost) return;
+    (afford(cost)?craftable:insufficient).push([id,cost]);
+  });
+  const block=(title,list)=>`<div class="sectionBlock"><h4 class="detailSectionTitle">${title}</h4>${list.length?`<div class="detailList">${list.map(([id,cost])=>fishingCraftCardHTML(type,id,cost)).join("")}</div>`:`<p class="emptyText">なし</p>`}</div>`;
+  h += block("今すぐ作成可能", craftable);
+  h += block("素材不足", insufficient);
+  h += `</div>`;
+  return h;
+}
+function renderMaintenanceSubScreen(major=maintState.major||"ship", slot=maintState.slot){
+  ensureRunShape(); ensureLevels(); recalcPlayer();
+  maintState.major=major;
+  if(!slot) slot = major==="ship" ? "hull" : "rod";
+  maintState.slot=slot;
+  $("#subScreenTitle").textContent="整備";
+  let h = materialsStripHTML();
+  h += `<div class="maintMajorTabs"><button data-maint-major="ship" class="${major==="ship"?"active":""}">機体</button><button data-maint-major="fishing" class="${major==="fishing"?"active":""}">釣具</button></div>`;
+  h += major==="ship" ? renderShipSchematic() : renderFishingSchematic();
+  h += major==="ship" ? renderShipDetail(slot) : renderFishingDetail(slot);
+  $("#subScreenBody").innerHTML=h;
+  $$("[data-maint-major]").forEach(b=>b.onclick=()=>renderMaintenanceSubScreen(b.dataset.maintMajor, null));
+  $$("[data-maint-slot]").forEach(b=>b.onclick=()=>renderMaintenanceSubScreen(maintState.major, b.dataset.maintSlot));
+  if($("#shipUpgradeBtnV9")) $("#shipUpgradeBtnV9").onclick=()=>{ const cost=normalizeCost(shipUpgradeCostObj()); if(!costAfford(cost)) return; spendCost(cost); run.shipLevel++; run.hp+=55; recalcPlayer(); saveRun(); renderMaintenanceSubScreen("ship","hull"); toast("船体アップグレード"); };
+  $$("[data-upgrade-inst]").forEach(b=>b.onclick=()=>{ const [type, idxStr] = b.dataset.upgradeInst.split(":"); const idx=Number(idxStr), arr = type==="weapon" ? run.weapons : run.equipments, inst = arr[idx]; if(!inst) return; const cost=normalizeCost(itemUpgradeCost(type,inst)); if(!costAfford(cost)) return toast("素材不足"); spendCost(cost); inst.lvl=(inst.lvl||1)+1; recalcPlayer(); saveRun(); renderMaintenanceSubScreen("ship", `${type}:${idx}`); toast("強化しました"); });
+  $$("[data-unequip-slot]").forEach(b=>b.onclick=()=>{ const [type, idxStr] = b.dataset.unequipSlot.split(":"); unequipSpecificSlot(type, Number(idxStr)); renderMaintenanceSubScreen("ship", `${type}:${Math.max(0,Number(idxStr)-1)}`); });
+  $$("[data-open-owned]").forEach(b=>b.onclick=()=>{ const [type, uidv, slotIndexStr]=b.dataset.openOwned.split(":"); const inst = run.storage.find(x=>x.uid===uidv); if(inst) openOwnedItemModal(type, inst, Number(slotIndexStr)); });
+  $$("[data-open-craft]").forEach(b=>b.onclick=()=>{ const [type,id,slotIndexStr]=b.dataset.openCraft.split(":"); openCraftItemModal(type, id, Number(slotIndexStr)); });
+  $$("[data-open-fishing-owned]").forEach(b=>b.onclick=()=>{ const [type,id]=b.dataset.openFishingOwned.split(":"); openFishingOwnedModal(type,id); });
+  $$("[data-open-fishing-craft]").forEach(b=>b.onclick=()=>{ const [type,id]=b.dataset.openFishingCraft.split(":"); openFishingCraftModal(type,id); });
+}
+function equipSpecificFromStorage(uidv, type, slotIndex){
+  ensureLevels();
+  const storeIdx=run.storage.findIndex(x=>x.uid===uidv); if(storeIdx<0) return;
+  const inst=run.storage[storeIdx]; if(inst.type!==type) return;
+  const targetArr = type==="weapon" ? run.weapons : run.equipments;
+  const targetSlots = type==="weapon" ? run.weaponSlots : run.equipSlots;
+  if(slotIndex>=targetSlots) return;
+  const newDef=getDef(type, inst.id);
+  const current=targetArr[slotIndex], currentLoad = current ? (getDef(type,current.id)?.load||0) : 0;
+  if(getLoad()-currentLoad+(newDef?.load||0) > run.maxLoad) return toast("装備負荷オーバー");
+  run.storage.splice(storeIdx,1);
+  if(current) run.storage.push({...current, type});
+  targetArr[slotIndex]={id:inst.id,uid:inst.uid,lvl:inst.lvl||1};
+  recalcPlayer(); saveRun(); toast("装備を変更");
+}
+function unequipSpecificSlot(type, slotIndex){
+  if(run.storage.length>=run.storageCap) return toast("倉庫満杯");
+  const targetArr = type==="weapon" ? run.weapons : run.equipments;
+  const inst = targetArr[slotIndex]; if(!inst) return;
+  targetArr.splice(slotIndex,1);
+  run.storage.push({...inst,type});
+  recalcPlayer(); saveRun(); toast("倉庫へ移しました");
+}
+function craftToStorage(type,id){
+  const def=getDef(type,id); if(!def) return;
+  if(!afford(def.cost)) return toast("素材不足");
+  if(run.storage.length>=run.storageCap) return toast("倉庫が満杯です");
+  Object.entries(def.cost).forEach(([k,v])=>run.materials[k]-=v);
+  run.storage.push({type,id,uid:uid(),lvl:1});
+  saveRun(); toast(`${def.name} 作成`);
+}
+function openActionModal(title, bodyHTML, buttons){
+  $("#itemActionTitle").textContent=title;
+  $("#itemActionBody").innerHTML=bodyHTML;
+  $("#itemActionButtons").innerHTML=buttons.map((b,i)=>`<button data-modal-act="${i}" class="${b.primary?'primary':''} ${b.danger?'danger':''}">${b.label}</button>`).join("");
+  $("#itemActionModal").classList.add("active");
+  $$("[data-modal-act]").forEach(btn=>btn.onclick=()=>{ const action=buttons[Number(btn.dataset.modalAct)]; closeActionModal(); if(action?.onClick) action.onClick(); });
+}
+function closeActionModal(){ $("#itemActionModal").classList.remove("active"); }
+function openOwnedItemModal(type, inst, slotIndex){
+  const d=getDef(type, inst.id); if(!d) return;
+  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(type,inst.id)}</div><div><div class="detailSectionTitle" style="margin:0">${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta">${formatItemMeta(type,inst).map(x=>`<span class="metaChip">${x}</span>`).join("")}</div></div>`;
+  openActionModal(d.name, body, [{label:"装備", primary:true, onClick:()=>{ equipSpecificFromStorage(inst.uid,type,slotIndex); renderMaintenanceSubScreen("ship", `${type}:${slotIndex}`); }},{label:"分解", danger:true, onClick:()=>{ disasmStorage(inst.uid); renderMaintenanceSubScreen("ship", `${type}:${slotIndex}`); }}]);
+}
+function openCraftItemModal(type,id,slotIndex){
+  const d=getDef(type,id); if(!d) return;
+  const count=blueprintCount(type,id), unlocked=isBlueprintUnlocked(type,id), need=blueprintNeed(d), remain=Math.max(0,need-count);
+  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(type,id)}</div><div><div class="detailSectionTitle" style="margin:0">${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta"><span class="metaChip">${type==="weapon"?`ATK ${d.atk}`:"装備"}</span><span class="metaChip">負荷 ${d.load}</span>${!unlocked?`<span class="metaChip">解析 ${count}/${need}</span><span class="metaChip">あと${remain}回入手</span>`:"<span class='metaChip'>設計図完成</span>"}</div>${unlocked?materialNeedListHTML(d.cost):""}</div>`;
+  const buttons = unlocked ? [{label:"作成", primary:true, onClick:()=>{ craftToStorage(type,id); renderMaintenanceSubScreen("ship", `${type}:${slotIndex}`); }}] : [{label:"OK", primary:true, onClick:()=>{}}];
+  openActionModal(d.name, body, buttons);
+}
+function openFishingOwnedModal(type,id){
+  const name = type==="hook" ? (hookTypes.find(x=>x.id===id)?.name||id) : `${id}${{rod:"ロッド",reel:"リール",line:"ライン"}[type]}`;
+  const desc = type==="hook" ? (hookTypes.find(x=>x.id===id)?.desc||"") : (id==="安定"?"成功ゾーンへの追従が楽になる":id==="高速"?"回収進捗が速くなる":id==="重量"?"タップ上昇力が強くなる":"標準性能");
+  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(type,id)}</div><div><div class="detailSectionTitle" style="margin:0">${name}</div><div style="font-size:.8rem;color:#aac0de">${desc}</div></div></div></div>`;
+  openActionModal(name, body, [{label:"装備", primary:true, onClick:()=>{ if(type==="hook") run.rod.hook=id; else run.rod[type]=id; saveRun(); renderMaintenanceSubScreen("fishing", type); toast("装備を変更"); }}]);
+}
+function openFishingCraftModal(type,id){
+  const cost=fishingRecipes[type]?.[id]; if(!cost) return;
+  const name = type==="hook" ? (hookTypes.find(x=>x.id===id)?.name||id) : `${id}${{rod:"ロッド",reel:"リール",line:"ライン"}[type]}`;
+  const desc = type==="hook" ? (hookTypes.find(x=>x.id===id)?.desc||"") : (id==="安定"?"成功ゾーンへの追従が楽になる":id==="高速"?"回収進捗が速くなる":id==="重量"?"タップ上昇力が強くなる":"標準性能");
+  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(type,id)}</div><div><div class="detailSectionTitle" style="margin:0">${name}</div><div style="font-size:.8rem;color:#aac0de">${desc}</div></div></div>${materialNeedListHTML(cost)}</div>`;
+  openActionModal(name, body, [{label:"作成", primary:true, onClick:()=>{ craftFishing(type,id); renderMaintenanceSubScreen("fishing", type); }}]);
+}
+function openSubScreen(tab){
+ currentTab=tab; uiPaused=true; $("#subScreen").classList.add("active");
+ if(tab==="maintenance"){ renderMaintenanceSubScreen(maintState.major||"ship", maintState.slot || "hull"); return; }
+ if(tab==="settings"){ $("#subScreenTitle").textContent="設定"; renderSettingsSubScreen(); return; }
+}
+function closeSubScreen(){
+ $("#subScreen").classList.remove("active");
+ $("#itemActionModal").classList.remove("active");
+ uiPaused=false; currentTab="fishing";
+ $$("#gameNav button").forEach(b=>b.classList.toggle("active",b.dataset.tab==="fishing"));
 }
 
 $$(".backBtn").forEach(b=>b.onclick=()=>showScreen(b.dataset.back));
@@ -957,6 +1253,8 @@ $("#playBtn").onclick=()=>{
 };
 $("#closeDrawerBtn").onclick=()=>$("#drawer").classList.remove("active");
 $("#subBackBtn").onclick=closeSubScreen;
+$("#itemActionClose").onclick=closeActionModal;
+$("#itemActionModal").onclick=(e)=>{if(e.target.id==="itemActionModal")closeActionModal()};
 $$("#gameNav button").forEach(b=>b.onclick=()=>{
  const tab=b.dataset.tab;
  if(b.disabled)return;

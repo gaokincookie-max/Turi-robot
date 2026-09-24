@@ -116,7 +116,7 @@
           <div class="fishingLine long"></div>
         </div>
         <div id="biteIndicator" class="biteIndicator">!</div>
-        <div id="floatingHint" class="floatingHint">宇宙を漂流中…</div>
+        <div id="floatingHint" class="floatingHint"></div>
       </div>
 
       <div id="battleScene" class="modeLayer">
@@ -182,12 +182,10 @@
 
     <div id="battleActions" class="battleActions"></div>
 
-    <nav id="gameNav" class="gameNav">
-      <button data-tab="fishing" class="active">釣り</button>
-      <button data-tab="upgrade">強化</button>
-      <button data-tab="craft">作成</button>
-      <button data-tab="storage">倉庫</button>
-      <button data-tab="settings">設定</button>
+    <nav id="gameNav" class="gameNav gameNavV9">
+      <button data-tab="fishing" class="active"><span class="navIcon">🎣</span><span class="navLabel">釣り</span></button>
+      <button data-tab="maintenance"><span class="navIcon">🔧</span><span class="navLabel">整備</span></button>
+      <button data-tab="settings"><span class="navIcon">⚙</span><span class="navLabel">設定</span></button>
     </nav>
 
 
@@ -198,6 +196,18 @@
         <div></div>
       </div>
       <div id="subScreenBody" class="subScreenBody"></div>
+    </div>
+
+
+    <div id="itemActionModal" class="globalModal">
+      <div class="globalModalCard actionModalCard">
+        <div class="actionModalHead">
+          <h2 id="itemActionTitle">詳細</h2>
+          <button id="itemActionClose">×</button>
+        </div>
+        <div id="itemActionBody"></div>
+        <div id="itemActionButtons" class="actions modalActions"></div>
+      </div>
     </div>
 
     <div id="drawer" class="drawer">

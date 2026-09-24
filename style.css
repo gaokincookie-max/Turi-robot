@@ -179,3 +179,123 @@ button.danger{background:#442029;border-color:#7a3440}
 }
 .materialIcon{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;background:#182440;color:#dce7ff;font-size:1rem}
 .materialLabel{font-size:.75rem;color:#b9c4df}.materialCostItem strong{font-size:.82rem}
+
+/* ===== v9 UI Refresh ===== */
+.gameHud{
+  grid-template-columns: 1.05fr 1.55fr .95fr !important;
+  gap:12px !important;
+  padding:14px 14px 12px !important;
+  background:linear-gradient(180deg,#0c1325f4,#0b1020ea) !important;
+  border-bottom:1px solid #22304a;
+}
+.gameHud > div,.gameHud .hpWrap{
+  min-height:66px;
+  border:1px solid #22314e;
+  border-radius:14px;
+  background:#101829;
+  padding:9px 10px;
+}
+.gameHud small{
+  font-size:.7rem !important;
+  letter-spacing:.18em !important;
+  color:#9ab0d2 !important;
+}
+.gameHud strong,#playerHpText{font-size:1.08rem !important}
+.hpBar{height:16px !important;border-radius:999px !important;margin:6px 0 5px !important}
+#playerHpFill{border-radius:999px}
+#distanceText,#loadText{font-size:1.18rem}
+.floatingHint{display:none !important}
+.stars.moving{
+  background-image:
+   radial-gradient(circle at 8% 18%, rgba(255,255,255,.95) 0 1.4px, transparent 1.8px),
+   radial-gradient(circle at 26% 62%, rgba(126,239,255,.9) 0 1.2px, transparent 1.7px),
+   radial-gradient(circle at 42% 28%, rgba(255,255,255,.85) 0 1.1px, transparent 1.6px),
+   radial-gradient(circle at 58% 74%, rgba(255,230,167,.95) 0 1.6px, transparent 2px),
+   radial-gradient(circle at 73% 46%, rgba(255,255,255,.9) 0 1.1px, transparent 1.6px),
+   radial-gradient(circle at 91% 22%, rgba(126,239,255,.95) 0 1.4px, transparent 1.9px),
+   radial-gradient(circle at 16% 86%, rgba(255,255,255,.9) 0 1px, transparent 1.4px);
+  background-size:100% 100%;
+  animation:starDrift 8s linear infinite;
+  opacity:.9;
+}
+@keyframes starDrift{from{transform:translateX(0)}to{transform:translateX(-120px)}}
+.gameNavV9{
+  grid-template-columns:repeat(3,1fr) !important;
+  gap:10px !important;
+  padding:10px 12px calc(12px + env(safe-area-inset-bottom)) !important;
+  background:#0a1020f7 !important;
+  border-top:1px solid #22304c;
+}
+.gameNavV9 button{
+  min-height:68px;padding:10px 4px !important;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;font-size:1.02rem !important;border-radius:16px !important;
+}
+.gameNavV9 .navIcon{font-size:1.5rem;line-height:1}
+.gameNavV9 .navLabel{font-size:.9rem;font-weight:700}
+.subScreenHeader{grid-template-columns:auto 1fr auto;min-height:64px}
+.subScreenHeader h2{font-size:1.08rem !important}
+.subScreenBody{padding:12px 12px 20px !important}
+.materialStrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.materialMini{background:#11192d;border:1px solid #2f3d5c;border-radius:12px;padding:8px 6px;text-align:center}
+.materialMini .materialIcon{width:28px;height:28px;margin:0 auto 3px;font-size:1rem}
+.materialMini small{display:block;font-size:.66rem;color:#9db1d3}
+.materialMini strong{font-size:.95rem}
+.maintMajorTabs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.maintMajorTabs button.active{border-color:var(--cyan);color:var(--cyan)}
+.maintPanel{background:#10182c;border:1px solid #2f3d5c;border-radius:16px;padding:12px;margin-bottom:12px}
+.loadMeterBar{height:12px;background:#0a0f1d;border:1px solid #283550;border-radius:999px;overflow:hidden;margin-top:8px}
+.loadMeterBar > div{height:100%;background:linear-gradient(90deg,#46d7ff,#86ffa5)}
+.maintShipArea{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px;align-items:center;margin-top:10px}
+.slotColumn{display:flex;flex-direction:column;gap:10px}
+.shipCenterCore{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.shipBlueprint{width:100%;max-width:220px;aspect-ratio:3/5;background:linear-gradient(180deg,#273756,#121c2f);clip-path:polygon(50% 0,78% 10%,92% 30%,88% 72%,66% 100%,34% 100%,12% 72%,8% 30%,22% 10%);border:2px solid #4b5e87;position:relative;box-shadow:inset 0 0 24px #9acbff15,0 0 24px #5cf2ff18}
+.shipBlueprint:before{content:"機体";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.35rem;font-weight:900;letter-spacing:.18em;color:#dce8ff}
+.gearBlueprint{min-height:270px;position:relative;padding:10px 0}
+.rodPath{position:absolute;left:50%;transform:translateX(-50%);top:8px;width:18px;height:210px;border-radius:999px;background:linear-gradient(180deg,#7fb3ff,#4c6ea1 65%,#2b3f60);box-shadow:0 0 0 2px #2f4261 inset}
+.rodPath:after{content:"";position:absolute;left:8px;top:48px;width:3px;height:120px;background:#cbf7ff;transform:rotate(9deg);transform-origin:top center;border-radius:999px}
+.slotButton{width:100%;min-height:58px;border-radius:14px;border:1px solid #31425f;background:#0d1426;color:#d9e7ff;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:8px 6px;text-align:center}
+.slotButton small{color:#8fa6ca;font-size:.64rem;letter-spacing:.09em}
+.slotButton strong{font-size:.86rem}
+.slotButton.active{border-color:#66efff;box-shadow:0 0 0 2px #66efff35 inset;color:#66efff}
+.slotButton.empty strong{color:#7e8ea9}
+.coreSlotButton{width:88%;max-width:180px;min-height:84px;border-radius:18px;background:#0c1426cc}
+.gearSlotButton{position:absolute;width:132px;max-width:42vw;min-height:60px}
+.gear-slot-rod{left:50%;transform:translateX(-50%);top:0}
+.gear-slot-reel{left:4px;top:88px}
+.gear-slot-line{left:50%;transform:translateX(-50%);top:178px}
+.gear-slot-hook{right:4px;top:130px}
+.detailSectionTitle{margin:.1rem 0 .55rem;font-size:.96rem;letter-spacing:.04em}
+.bigCurrentCard{display:grid;gap:8px;background:#121b31;border:1px solid #39507a;border-radius:16px;padding:14px;margin-bottom:12px}
+.bigCurrentCard .topLine{display:flex;gap:10px;align-items:center}
+.bigIconBadge{width:58px;height:58px;border-radius:16px;background:#1a2945;border:1px solid #3d537d;display:flex;align-items:center;justify-content:center;font-size:2rem}
+.detailMeta{display:flex;flex-wrap:wrap;gap:8px}
+.metaChip{background:#0d1527;border:1px solid #2e3c59;border-radius:999px;padding:5px 9px;font-size:.76rem;color:#c7d2ea}
+.detailList{display:grid;gap:8px;margin-bottom:12px}
+.simpleCard{background:#10182b;border:1px solid #2e3d5b;border-radius:14px;padding:10px}
+.simpleCardHead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.simpleCardIcon{width:36px;height:36px;border-radius:12px;background:#1a2844;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex:none}
+.simpleCard h4{margin:0;font-size:.92rem}
+.simpleCard p{margin:.15rem 0;color:#afbdd8;font-size:.76rem}
+.simpleCard .miniMeta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.simpleCard .miniMeta span{font-size:.7rem;color:#c8d3ec}
+.simpleCard button{margin-top:8px}
+.sectionBlock{margin-bottom:14px}
+.emptyText{color:#8598b9;font-size:.8rem}
+.mutedSectionTitle{color:#9cadca}
+.materialNeedGrid{display:grid;gap:6px;margin-top:8px}
+.materialNeed{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:7px;padding:6px 8px;border-radius:10px;background:#0d1527;border:1px solid #2d3a57}
+.materialNeed.ok{border-color:#2f7d63}
+.materialNeed.ng{border-color:#86545a}
+.materialNeed em{font-style:normal;font-size:.78rem}
+.materialNeed strong{font-size:.8rem}
+.actionModalCard{width:min(460px,96%)}
+.actionModalHead{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}
+.actionModalHead h2{margin:.2rem 0}
+#itemActionClose{min-width:42px}
+#itemActionBody .bigCurrentCard{margin-bottom:4px}
+.modalActions{justify-content:center;gap:10px;margin-top:12px}
+@media (max-width:560px){
+  .gameHud{grid-template-columns:1fr 1.2fr 1fr !important}
+  .maintShipArea{grid-template-columns:84px 1fr 84px}
+  .slotButton strong{font-size:.78rem}
+  .gearSlotButton{width:118px}
+}
