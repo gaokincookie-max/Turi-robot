@@ -851,7 +851,41 @@ button.danger{background:#442029;border-color:#7a3440}
 }
 
 
-/* ===== v13 storage + overflow ===== */
-.maintMajorTabs{grid-template-columns:repeat(3,1fr) !important;}
-.overflowPickList .simpleCard{margin-bottom:8px;}
-.overflowPickList .simpleCard:last-child{margin-bottom:0;}
+/* ===== v13 inventory / overflow ===== */
+.maintMajorTabs{
+  grid-template-columns:repeat(3,1fr) !important;
+}
+.overflowModalCard{
+  width:min(620px,98%);
+  max-height:min(82vh,900px);
+  overflow:auto;
+  text-align:left;
+}
+.overflowBody{
+  display:grid;
+  gap:12px;
+}
+.overflowNote{
+  color:#b8c8e2;
+  font-size:.82rem;
+  line-height:1.5;
+}
+.overflowStorageList{
+  display:grid;
+  gap:10px;
+  max-height:42vh;
+  overflow:auto;
+  padding-right:2px;
+}
+.warehouseMeta{
+  background:#0e1628;
+  border:1px solid #2f3d5c;
+  border-radius:14px;
+  padding:10px 12px;
+  margin-bottom:12px;
+}
+.simpleCard .cardActionHint{
+  margin-top:8px;
+  color:#84cfff;
+  font-size:.72rem;
+}

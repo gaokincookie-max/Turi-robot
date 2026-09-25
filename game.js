@@ -193,7 +193,7 @@ function newRun(startDistance=null){
    fishingInventory:{rod:["標準"],reel:["標準"],line:["標準"],hook:["standard"]},
    kills:0,catches:0,tokensEarned:0,
    nextBite:rand(5,9),nextPirate:start+rand(2.4,3.8),mode:"fishing",
-   pendingCatch:null,pendingSalvage:null,enemy:null,actionCooldowns:{},
+   pendingCatch:null,pendingSalvage:null,pendingOverflow:null,enemy:null,actionCooldowns:{},
    savedAt:Date.now()
  };
  recalcPlayer(); saveRun(); startGame();
@@ -216,6 +216,7 @@ function ensureRunShape(){
  if(!Array.isArray(run.storage)) run.storage=[];
  if(!Array.isArray(run.weapons)) run.weapons=[];
  if(!Array.isArray(run.equipments)) run.equipments=[];
+ if(!run.pendingOverflow) run.pendingOverflow=null;
  if(!Number.isFinite(run.distance))run.distance=0;
  if(!Number.isFinite(run.nextBite))run.nextBite=rand(2,5);
  if(!Number.isFinite(run.nextPirate))run.nextPirate=run.distance+rand(2.5,4);
@@ -416,19 +417,17 @@ function finishFishing(success,salvage){
    run.materials[c.kind.mat]+=c.amount;
    detail="クラフトや機体強化に使用できます。";
  }else{
-   const revealKind={...c.kind};
-   run.pendingCatch=null;
-   run.nextBite=rand(5,9);
-   run.mode="lootResolve";
-   saveMeta();saveRun();switchMode("fishing");
-   receiveMachineItem(c.kind, ({isNew:resolvedNew, detail:resolvedDetail})=>{
-     run.mode="lootReveal";
-     saveMeta();saveRun();switchMode("fishing");
-     showLootReveal(revealKind,c.amount,resolvedNew,resolvedDetail,()=>{
-       run.mode="fishing";setGameNavLocked(false);saveRun();switchMode("fishing");
-     });
-   });
-   return;
+   isNew=markMachineDiscovered(c.kind.type,c.kind.id);
+   const inst={id:c.kind.id,uid:uid(),type:c.kind.type,lvl:1};
+   const bp=advanceBlueprint(c.kind);
+   detail=bp.unlockedNow?"設計図完成！ 製作可能になりました。":
+          bp.unlocked?"設計図は解禁済みです。":
+          `設計図解析 ${bp.count}/${bp.need}（あと${bp.remaining}回）`;
+   if(run.storage.length<run.storageCap) run.storage.push(inst);
+   else{
+     run.pendingOverflow={inst};
+     detail+=" 倉庫が満杯です。新しい品を分解するか、倉庫から1つ分解して空きを作ってください。";
+   }
  }
  const revealKind={...c.kind};
  run.pendingCatch=null;
@@ -436,6 +435,10 @@ function finishFishing(success,salvage){
  run.mode="lootReveal";
  saveMeta();saveRun();switchMode("fishing");
  showLootReveal(revealKind,c.amount,isNew,detail,()=>{
+   if(run.pendingOverflow){
+     openOverflowChoice(()=>{ run.mode="fishing";setGameNavLocked(false);saveRun();switchMode("fishing"); });
+     return;
+   }
    run.mode="fishing";setGameNavLocked(false);saveRun();switchMode("fishing");
  });
 }
@@ -597,21 +600,26 @@ function finishSalvage(success){
      run.materials[s.kind.mat]+=shownAmount;
      detail="海賊船から回収した素材。";
    }else{
-     const reveal={...s.kind};
-     run.pendingSalvage=null;run.enemy=null;run.nextPirate=run.distance+rand(2.3,3.6);run.nextBite=rand(3.5,7);run.mode="lootResolve";saveRun();
-     switchMode("fishing");
-     receiveMachineItem(s.kind, ({isNew:resolvedNew, detail:resolvedDetail})=>{
-       run.mode="lootReveal";saveRun();
-       showLootReveal(reveal,shownAmount,resolvedNew,resolvedDetail,()=>{
-         run.mode="fishing";setGameNavLocked(false);saveRun();switchMode("fishing");renderBattleActions();
-       });
-     });
-     return;
+     isNew=markMachineDiscovered(s.kind.type,s.kind.id);
+     const inst={id:s.kind.id,uid:uid(),type:s.kind.type,lvl:1};
+     const bp=advanceBlueprint(s.kind);
+     detail=bp.unlockedNow?"設計図完成！ 製作可能になりました。":
+            bp.unlocked?"設計図は解禁済みです。":
+            `設計図解析 ${bp.count}/${bp.need}（あと${bp.remaining}回）`;
+     if(run.storage.length<run.storageCap) run.storage.push(inst);
+     else{
+       run.pendingOverflow={inst};
+       detail+=" 倉庫が満杯です。新しい品を分解するか、倉庫から1つ分解して空きを作ってください。";
+     }
    }
    const reveal={...s.kind};
    run.pendingSalvage=null;run.enemy=null;run.nextPirate=run.distance+rand(2.3,3.6);run.nextBite=rand(3.5,7);run.mode="lootReveal";saveRun();
    switchMode("fishing");
    showLootReveal(reveal,shownAmount,isNew,detail,()=>{
+     if(run.pendingOverflow){
+       openOverflowChoice(()=>{ run.mode="fishing";setGameNavLocked(false);saveRun();switchMode("fishing");renderBattleActions(); });
+       return;
+     }
      run.mode="fishing";setGameNavLocked(false);saveRun();switchMode("fishing");renderBattleActions();
    });
  }else{
@@ -1066,82 +1074,6 @@ function loadPanelHTML(){
   const ratio=Math.min(1,getLoad()/Math.max(1,run.maxLoad));
   return `<div><div class="statRow"><span>過負荷ゲージ</span><strong>${getLoad()} / ${run.maxLoad}</strong></div><div class="loadMeterBar"><div style="width:${ratio*100}%"></div></div><div class="statRow" style="margin-top:8px"><span>武器 / 装備 / 倉庫</span><strong>${run.weapons.length}/${run.weaponSlots} ・ ${run.equipments.length}/${run.equipSlots} ・ ${run.storage.length}/${run.storageCap}</strong></div></div>`;
 }
-
-function machineDetailText(kind){
-  const bp=advanceBlueprint(kind);
-  return bp.unlockedNow?"設計図完成！ 製作可能になりました。":
-         bp.unlocked?"設計図は解禁済みです。":
-         `設計図解析 ${bp.count}/${bp.need}（あと${bp.remaining}回）`;
-}
-function newLootBodyHTML(kind, extraText=""){
-  const def=getDef(kind.type, kind.id);
-  if(!def) return `<div class="bigCurrentCard"><div class="detailSectionTitle">入手品</div><p>${extraText}</p></div>`;
-  return `<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(kind.type,kind.id)}</div><div><div class="detailSectionTitle" style="margin:0">${def.name}</div><div style="font-size:.8rem;color:#aac0de">${def.desc}</div></div></div><div class="detailMeta">${(kind.type==="weapon"?weaponDetailMeta(def,{lvl:1}).map(x=>`<span class="metaChip">${x}</span>`).join(""):`<span class="metaChip">負荷 ${def.load}</span>`)}<span class="metaChip">倉庫 ${run.storage.length}/${run.storageCap}</span></div>${extraText?`<div style="margin-top:10px;font-size:.8rem;color:#afbdd8">${extraText}</div>`:""}</div>`;
-}
-function simpleWarehouseCardHTML(inst){
-  const d=getDef(inst.type,inst.id); if(!d) return "";
-  const extra = inst.type==="weapon"
-    ? `<div class="miniMeta"><span>負荷 ${d.load}</span>${d.active?`<span>ACT ${d.active.name}</span>`:""}</div>`
-    : `<div class="miniMeta"><span>負荷 ${d.load}</span>${d.hp?`<span>HP +${Math.round(d.hp*equipLevelMult(inst))}</span>`:""}</div>`;
-  return `<div class="simpleCard tapCard" data-open-warehouse="${inst.uid}"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(inst.type,inst.id)}</div><div><h4>${d.name}</h4><p>Lv.${inst.lvl||1} ・ ${inst.type==="weapon"?weaponSummaryLine(d,inst):instanceStatLine(inst.type,inst)}</p>${extra}</div></div></div>`;
-}
-function renderWarehouseDetail(){
-  const items=[...run.storage];
-  let h=`<div class="maintPanel"><div class="statRow"><span>保管数</span><strong>${run.storage.length} / ${run.storageCap}</strong></div>`;
-  if(!items.length){
-    h+=`<div class="sectionBlock"><p class="emptyText">倉庫は空です。</p></div>`;
-  }else{
-    h+=`<div class="sectionBlock"><h4 class="detailSectionTitle">保管アイテム一覧</h4><div class="detailList">${items.map(inst=>simpleWarehouseCardHTML(inst)).join("")}</div></div>`;
-  }
-  h+=`</div>`;
-  return h;
-}
-function receiveMachineItem(kind, onResolved){
-  const isNew=markMachineDiscovered(kind.type,kind.id);
-  const detail=machineDetailText(kind);
-  const inst={id:kind.id,uid:uid(),type:kind.type,lvl:1};
-  if(run.storage.length<run.storageCap){
-    run.storage.push(inst);
-    onResolved({isNew, detail});
-    return;
-  }
-  openInventoryOverflowChoice(inst, kind, ({detailSuffix=""}={})=>{
-    onResolved({isNew, detail:detail + (detailSuffix?` ${detailSuffix}`:"")});
-  });
-}
-function openInventoryOverflowChoice(inst, kind, onDone){
-  const body = newLootBodyHTML(kind, "倉庫が満杯です。拾った品を分解するか、倉庫の品を1つ分解して空きを作ってください。");
-  openActionModal("倉庫が満杯です", body, [
-    {label:"拾ったものを分解", danger:true, onClick:()=>{ disassemble(kind); saveRun(); onDone({detailSuffix:"入手品を分解しました。"}); }},
-    {label:"倉庫から1つ分解して入れる", primary:true, onClick:()=>{ openInventoryOverflowStoragePicker(inst, kind, onDone); }}
-  ]);
-}
-function openInventoryOverflowStoragePicker(inst, kind, onDone){
-  const list = run.storage.length ? `<div class="detailList overflowPickList">${run.storage.map(item=>simpleWarehouseCardHTML(item)).join("")}</div>` : `<p class="emptyText">分解できる保管品がありません。</p>`;
-  const body = `${newLootBodyHTML(kind, "どの保管アイテムを分解するか選んでください。分解後、新しい入手品が自動で倉庫に入ります。")}<div class="sectionBlock"><h4 class="detailSectionTitle">分解して空きを作る</h4>${list}</div>`;
-  openActionModal("倉庫から1つ分解", body, [
-    {label:"戻る", onClick:()=>{ openInventoryOverflowChoice(inst, kind, onDone); }}
-  ]);
-  $$('[data-open-warehouse]').forEach(card=>card.onclick=()=>{
-    const uidv=card.dataset.openWarehouse;
-    const idx=run.storage.findIndex(x=>x.uid===uidv);
-    if(idx<0) return;
-    const [removed]=run.storage.splice(idx,1);
-    disassemble(removed);
-    run.storage.push(inst);
-    saveRun();
-    closeActionModal();
-    onDone({detailSuffix:`${itemName({type:removed.type,id:removed.id})} を分解し、入手品を収納しました。`});
-  });
-}
-function openWarehouseItemModal(inst){
-  const d=getDef(inst.type, inst.id); if(!d) return;
-  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(inst.type,inst.id)}</div><div><div class="detailSectionTitle" style="margin:0">${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta">${formatItemMeta(inst.type,inst).map(x=>`<span class="metaChip">${x}</span>`).join("")}</div></div>`;
-  openActionModal(d.name, body, [
-    {label:"機体装備画面へ", primary:true, onClick:()=>{ renderMaintenanceSubScreen("ship", `${inst.type}:0`); toast("装備したいスロットを選んでください"); }},
-    {label:"分解", danger:true, onClick:()=>{ disasmStorage(inst.uid); renderMaintenanceSubScreen("storage","all"); }}
-  ]);
-}
 function renderShipSchematic(){
   let left='', right='';
   for(let i=0;i<run.weaponSlots;i++){
@@ -1156,7 +1088,7 @@ function renderShipSchematic(){
 }
 function renderFishingSchematic(){
   const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod"],["reel","リール",run.rod.reel+"リール","gear-slot-reel"],["line","ライン",run.rod.line+"ライン","gear-slot-line"],["hook","フック",(hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック"),"gear-slot-hook"]];
-  return `<div class="maintPanel">${materialsStripHTML()}<div class="gearBlueprint sideFishingView"><div class="gearRod"></div><div class="gearReel"></div><div class="gearLine"></div><div class="gearHookPoint"></div>${parts.map(([k,lbl,title,cls])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><small>${lbl}</small><strong>${title}</strong></button>`).join("")}</div></div>`;
+  return `<div class="maintPanel"><div class="gearBlueprint sideFishingView"><div class="gearRod"></div><div class="gearReel"></div><div class="gearLine"></div><div class="gearHookPoint"></div>${parts.map(([k,lbl,title,cls])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><small>${lbl}</small><strong>${title}</strong></button>`).join("")}</div></div>`;
 }
 function currentCardHTML(type,inst,slotIndex){
   const d=getDef(type,inst.id), cost=normalizeCost(itemUpgradeCost(type,inst));
@@ -1238,10 +1170,123 @@ function renderFishingDetail(slot){
   h += `</div>`;
   return h;
 }
+
+function warehouseStoredCardHTML(inst){
+  const d=getDef(inst.type,inst.id); if(!d) return "";
+  const summary = inst.type==="weapon" ? weaponSummaryLine(d,inst) : instanceStatLine(inst.type,inst);
+  return `<div class="simpleCard tapCard" data-open-warehouse-store="${inst.uid}"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(inst.type,inst.id)}</div><div><h4>${d.name}</h4><p>Lv.${inst.lvl||1} ・ ${summary}</p><div class="miniMeta"><span>${inst.type==="weapon"?"武器":"装備"}</span><span>保管中</span></div><div class="cardActionHint">タップで詳細</div></div></div></div>`;
+}
+function warehouseEquippedCardHTML(type, inst, idx){
+  const d=getDef(type,inst.id); if(!d) return "";
+  const summary = type==="weapon" ? weaponSummaryLine(d,inst) : instanceStatLine(type,inst);
+  return `<div class="simpleCard tapCard" data-open-warehouse-equipped="${type}:${idx}"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(type,inst.id)}</div><div><h4>${d.name}</h4><p>Lv.${inst.lvl||1} ・ ${summary}</p><div class="miniMeta"><span>装備中</span><span>${type==="weapon"?"武器スロット":"装備スロット"} ${idx+1}</span></div><div class="cardActionHint">タップで詳細</div></div></div></div>`;
+}
+function renderWarehouseOverview(){
+  let h=`<div class="maintPanel"><div class="warehouseMeta"><div class="statRow"><span>倉庫容量</span><strong>${run.storage.length} / ${run.storageCap}</strong></div><div class="statRow"><span>保管品</span><strong>武器 ${run.storage.filter(x=>x.type==="weapon").length} / 装備 ${run.storage.filter(x=>x.type==="equip").length}</strong></div></div>`;
+  h += `<div class="sectionBlock"><h4 class="detailSectionTitle">装備中の武器</h4>${run.weapons.length?`<div class="detailList">${run.weapons.map((inst,idx)=>warehouseEquippedCardHTML("weapon",inst,idx)).join("")}</div>`:`<p class="emptyText">装備中の武器はありません。</p>`}</div>`;
+  h += `<div class="sectionBlock"><h4 class="detailSectionTitle">装備中の装備</h4>${run.equipments.length?`<div class="detailList">${run.equipments.map((inst,idx)=>warehouseEquippedCardHTML("equip",inst,idx)).join("")}</div>`:`<p class="emptyText">装備中の装備はありません。</p>`}</div>`;
+  h += `<div class="sectionBlock"><h4 class="detailSectionTitle">倉庫</h4>${run.storage.length?`<div class="detailList">${run.storage.map(inst=>warehouseStoredCardHTML(inst)).join("")}</div>`:`<p class="emptyText">倉庫は空です。</p>`}</div>`;
+  h += `</div>`;
+  return h;
+}
+function upgradeEquippedItem(type, idx){
+  const arr = type==="weapon" ? run.weapons : run.equipments;
+  const inst = arr[idx]; if(!inst) return;
+  const cost = normalizeCost(itemUpgradeCost(type, inst));
+  if(!costAfford(cost)) return toast("素材不足");
+  spendCost(cost);
+  inst.lvl=(inst.lvl||1)+1;
+  recalcPlayer(); saveRun(); toast("強化しました");
+}
+function openWarehouseStoredModal(uidv){
+  const inst = run.storage.find(x=>x.uid===uidv); if(!inst) return;
+  const d=getDef(inst.type,inst.id); if(!d) return;
+  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(inst.type,inst.id)}</div><div><div class="detailSectionTitle" style="margin:0">${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta">${formatItemMeta(inst.type,inst).map(x=>`<span class="metaChip">${x}</span>`).join("")}<span class="metaChip">保管中</span></div></div>`;
+  openActionModal(d.name, body, [{label:"分解", danger:true, onClick:()=>{ disasmStorage(uidv); renderMaintenanceSubScreen("storage","warehouse"); }}]);
+}
+function openWarehouseEquippedModal(type, idx){
+  const arr = type==="weapon" ? run.weapons : run.equipments;
+  const inst = arr[idx]; if(!inst) return;
+  const d=getDef(type,inst.id); if(!d) return;
+  const cost = normalizeCost(itemUpgradeCost(type, inst));
+  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(type,inst.id)}</div><div><div class="detailSectionTitle" style="margin:0">${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta">${formatItemMeta(type,inst).map(x=>`<span class="metaChip">${x}</span>`).join("")}<span class="metaChip">装備中</span></div><div class="detailSectionTitle">次の強化コスト</div>${materialNeedListHTML(cost)}</div>`;
+  openActionModal(d.name, body, [
+    {label:"強化", primary:true, onClick:()=>{ if(costAfford(cost)){ upgradeEquippedItem(type, idx); } else { toast("素材不足"); } renderMaintenanceSubScreen("storage","warehouse"); }},
+    {label:"外して倉庫へ", onClick:()=>{ if(run.storage.length>=run.storageCap){ toast("倉庫満杯"); renderMaintenanceSubScreen("storage","warehouse"); return; } unequipSpecificSlot(type, idx); renderMaintenanceSubScreen("storage","warehouse"); }}
+  ]);
+}
+let overflowResolveCallback=null;
+let overflowView="choice";
+function finalizeOverflowAndResume(){
+  closeOverflowModal();
+  const cb = overflowResolveCallback;
+  overflowResolveCallback=null;
+  if(cb) cb();
+}
+function closeOverflowModal(){ $("#overflowModal").classList.remove("active"); }
+function resolveOverflowByDisassemblingNew(){
+  if(!run.pendingOverflow?.inst) return;
+  disassemble(run.pendingOverflow.inst);
+  run.pendingOverflow=null;
+  saveRun();
+  toast("新しい品を分解しました");
+  finalizeOverflowAndResume();
+}
+function resolveOverflowByDisassemblingStored(uidv){
+  const idx = run.storage.findIndex(x=>x.uid===uidv);
+  if(idx<0 || !run.pendingOverflow?.inst) return;
+  const [oldInst] = run.storage.splice(idx,1);
+  disassemble(oldInst);
+  const newInst = run.pendingOverflow.inst;
+  run.storage.push(newInst);
+  run.pendingOverflow=null;
+  saveRun();
+  toast(`${itemName(newInst)} を保管しました`);
+  finalizeOverflowAndResume();
+}
+function overflowCandidateCardHTML(inst){
+  const d=getDef(inst.type,inst.id); if(!d) return "";
+  const summary = inst.type==="weapon" ? weaponSummaryLine(d,inst) : instanceStatLine(inst.type,inst);
+  return `<div class="simpleCard tapCard" data-overflow-pick="${inst.uid}"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(inst.type,inst.id)}</div><div><h4>${d.name}</h4><p>Lv.${inst.lvl||1} ・ ${summary}</p><div class="miniMeta"><span>${inst.type==="weapon"?"武器":"装備"}</span><span>保管中</span></div><div class="cardActionHint">タップでこの品を分解</div></div></div></div>`;
+}
+function renderOverflowSelectionList(){
+  overflowView="select";
+  $("#overflowTitle").textContent="何を分解しますか？";
+  $("#overflowBody").innerHTML = `<div class="overflowNote">倉庫から1つ分解して空きを作ると、今回入手したアイテムが自動で保管されます。</div><div class="overflowStorageList">${run.storage.length?run.storage.map(inst=>overflowCandidateCardHTML(inst)).join(""):`<p class="emptyText">分解候補がありません。</p>`}</div>`;
+  $("#overflowButtons").innerHTML = `<button id="overflowBackBtn">キャンセル</button>`;
+  $("#overflowBackBtn").onclick=()=>renderOverflowChoice();
+  $$("[data-overflow-pick]").forEach(card=>card.onclick=()=>openOverflowStoredDetail(card.dataset.overflowPick));
+}
+function openOverflowStoredDetail(uidv){
+  const inst = run.storage.find(x=>x.uid===uidv); if(!inst) return;
+  const d=getDef(inst.type,inst.id); if(!d) return;
+  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(inst.type,inst.id)}</div><div><div class="detailSectionTitle" style="margin:0">${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta">${formatItemMeta(inst.type,inst).map(x=>`<span class="metaChip">${x}</span>`).join("")}</div></div>`;
+  openActionModal(`${d.name} を分解`, body, [
+    {label:"これを分解して保管", danger:true, onClick:()=>{ resolveOverflowByDisassemblingStored(uidv); }},
+    {label:"戻る", onClick:()=>{ renderOverflowSelectionList(); $("#overflowModal").classList.add("active"); }}
+  ]);
+}
+function renderOverflowChoice(){
+  overflowView="choice";
+  const inst = run.pendingOverflow?.inst;
+  if(!inst){ finalizeOverflowAndResume(); return; }
+  const d=getDef(inst.type,inst.id); if(!d){ run.pendingOverflow=null; finalizeOverflowAndResume(); return; }
+  $("#overflowTitle").textContent="倉庫がいっぱいです";
+  $("#overflowBody").innerHTML = `<div class="overflowNote">新しいアイテムを分解するか、倉庫内の装備を1つ分解して空きを作る必要があります。</div><div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(inst.type,inst.id)}</div><div><div class="detailSectionTitle" style="margin:0">新しく入手: ${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta">${formatItemMeta(inst.type,inst).map(x=>`<span class="metaChip">${x}</span>`).join("")}<span class="metaChip">倉庫 ${run.storage.length}/${run.storageCap}</span></div></div>`;
+  $("#overflowButtons").innerHTML = `<button id="overflowBreakNewBtn" class="danger">新しい品を分解</button><button id="overflowChooseStoredBtn" class="primary">倉庫から1つ分解して保管</button>`;
+  $("#overflowBreakNewBtn").onclick=()=>resolveOverflowByDisassemblingNew();
+  $("#overflowChooseStoredBtn").onclick=()=>renderOverflowSelectionList();
+}
+function openOverflowChoice(onResolved){
+  overflowResolveCallback=onResolved||null;
+  $("#overflowModal").classList.add("active");
+  renderOverflowChoice();
+}
+
 function renderMaintenanceSubScreen(major=maintState.major||"ship", slot=maintState.slot){
   ensureRunShape(); ensureLevels(); recalcPlayer();
   maintState.major=major;
-  if(!slot) slot = major==="ship" ? "hull" : major==="fishing" ? "rod" : "all";
+  if(!slot) slot = major==="ship" ? "hull" : major==="fishing" ? "rod" : "warehouse";
   maintState.slot=slot;
   $("#subScreenTitle").textContent="整備";
   let h = materialsStripHTML();
@@ -1253,7 +1298,7 @@ function renderMaintenanceSubScreen(major=maintState.major||"ship", slot=maintSt
     h += renderFishingSchematic();
     h += renderFishingDetail(slot);
   }else{
-    h += renderWarehouseDetail();
+    h += renderWarehouseOverview();
   }
   $("#subScreenBody").innerHTML=h;
   $$("[data-maint-major]").forEach(b=>b.onclick=()=>renderMaintenanceSubScreen(b.dataset.maintMajor, null));
@@ -1265,7 +1310,8 @@ function renderMaintenanceSubScreen(major=maintState.major||"ship", slot=maintSt
   $$("[data-open-craft]").forEach(b=>b.onclick=()=>{ const [type,id,slotIndexStr]=b.dataset.openCraft.split(":"); openCraftItemModal(type, id, Number(slotIndexStr)); });
   $$("[data-open-fishing-owned]").forEach(b=>b.onclick=()=>{ const [type,id]=b.dataset.openFishingOwned.split(":"); openFishingOwnedModal(type,id); });
   $$("[data-open-fishing-craft]").forEach(b=>b.onclick=()=>{ const [type,id]=b.dataset.openFishingCraft.split(":"); openFishingCraftModal(type,id); });
-  $$("[data-open-warehouse]").forEach(b=>b.onclick=()=>{ const inst = run.storage.find(x=>x.uid===b.dataset.openWarehouse); if(inst) openWarehouseItemModal(inst); });
+  $$("[data-open-warehouse-store]").forEach(b=>b.onclick=()=>openWarehouseStoredModal(b.dataset.openWarehouseStore));
+  $$("[data-open-warehouse-equipped]").forEach(b=>b.onclick=()=>{ const [type, idxStr]=b.dataset.openWarehouseEquipped.split(":"); openWarehouseEquippedModal(type, Number(idxStr)); });
 }
 function equipSpecificFromStorage(uidv, type, slotIndex){
   ensureLevels();
@@ -1377,6 +1423,8 @@ $("#closeDrawerBtn").onclick=()=>$("#drawer").classList.remove("active");
 $("#subBackBtn").onclick=closeSubScreen;
 $("#itemActionClose").onclick=closeActionModal;
 $("#itemActionModal").onclick=(e)=>{if(e.target.id==="itemActionModal")closeActionModal()};
+$("#overflowCloseBtn").onclick=()=>{ if(overflowView==="select") renderOverflowChoice(); };
+$("#overflowModal").onclick=(e)=>{ if(e.target.id==="overflowModal" && overflowView==="select") renderOverflowChoice(); };
 $$("#gameNav button").forEach(b=>b.onclick=()=>{
  const tab=b.dataset.tab;
  if(b.disabled)return;
