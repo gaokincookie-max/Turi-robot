@@ -299,3 +299,187 @@ button.danger{background:#442029;border-color:#7a3440}
   .slotButton strong{font-size:.78rem}
   .gearSlotButton{width:118px}
 }
+
+
+/* ===== v10 fishing side-view refresh ===== */
+.fishingRod{
+  position:absolute;
+  left:48px;
+  bottom:66px;
+  width:104px;
+  height:8px;
+  border-radius:999px;
+  background:linear-gradient(90deg,#d7e6ff,#84a1cf 65%,#6a84b1);
+  border:2px solid #24324a;
+  transform:rotate(-41deg);
+  transform-origin:left center;
+  z-index:1;
+  box-shadow:0 0 10px #5cf2ff22;
+}
+.fishingRod:after{
+  content:"";
+  position:absolute;
+  right:-4px;
+  top:-2px;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#dff3ff;
+  border:1px solid #24324a;
+}
+.fishingLine{
+  position:absolute;
+  width:2px;
+  background:#d5e3f7;
+  left:129px;
+  top:-13px;
+  height:160px;
+  opacity:.95;
+  box-shadow:0 0 8px #d8ecff55;
+}
+.fishingLine.long{
+  left:129px;
+  top:-13px;
+  height:350px;
+}
+.menuShip .fishingLine{
+  height:128px;
+}
+.playerShip{
+  width:175px;
+  height:82px;
+}
+.playerShip .fishingRod{
+  left:54px;
+  bottom:71px;
+  width:112px;
+}
+.playerShip .fishingLine{
+  left:137px;
+  top:-18px;
+}
+.biteIndicator{
+  left:calc(50% + 60px)!important;
+}
+
+/* Fishing equipment screen: side-view rod */
+.gearBlueprint.sideFishingView{
+  min-height:318px;
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 22% 76%, #1b2744 0, transparent 32%),
+    radial-gradient(circle at 82% 16%, #1c3155 0, transparent 28%),
+    linear-gradient(180deg,#0f1830,#0d1528 65%,#0b1120);
+  border:1px solid #2e4063;
+  border-radius:18px;
+  padding:14px 8px;
+}
+.gearRod{
+  position:absolute;
+  left:36px;
+  top:210px;
+  width:196px;
+  height:14px;
+  border-radius:999px;
+  background:linear-gradient(90deg,#dfe8f7,#88a3ce 62%,#647ea8);
+  border:2px solid #2c3b5a;
+  transform:rotate(-43deg);
+  transform-origin:left center;
+  box-shadow:0 0 12px #5cf2ff22;
+}
+.gearRod:after{
+  content:"";
+  position:absolute;
+  right:-5px;
+  top:-3px;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#ebf6ff;
+  border:2px solid #30405e;
+}
+.gearLine{
+  position:absolute;
+  left:238px;
+  top:74px;
+  width:3px;
+  height:152px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#e7f3ff,#b6cbea);
+  box-shadow:0 0 10px #e2f6ff33;
+}
+.gearHookPoint{
+  position:absolute;
+  left:233px;
+  top:223px;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#eef8ff;
+  border:2px solid #344564;
+  box-shadow:0 0 10px #ffffff26;
+}
+.gearSlotButton{
+  width:138px;
+  max-width:42vw;
+  min-height:64px;
+}
+.gear-slot-rod{
+  left:8px;
+  top:156px;
+  transform:none;
+}
+.gear-slot-reel{
+  left:54px;
+  top:236px;
+}
+.gear-slot-line{
+  left:auto;
+  right:10px;
+  top:26px;
+  transform:none;
+}
+.gear-slot-hook{
+  right:4px;
+  top:230px;
+}
+
+@media (max-width:560px){
+  .gearBlueprint.sideFishingView{
+    min-height:300px;
+  }
+  .gearRod{
+    left:26px;
+    top:206px;
+    width:174px;
+  }
+  .gearLine{
+    left:208px;
+    top:76px;
+    height:140px;
+  }
+  .gearHookPoint{
+    left:203px;
+    top:214px;
+  }
+  .gearSlotButton{
+    width:122px;
+  }
+  .gear-slot-rod{
+    left:2px;
+    top:150px;
+  }
+  .gear-slot-reel{
+    left:30px;
+    top:230px;
+  }
+  .gear-slot-line{
+    right:2px;
+    top:24px;
+  }
+  .gear-slot-hook{
+    right:-2px;
+    top:222px;
+  }
+}

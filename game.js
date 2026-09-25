@@ -1048,7 +1048,7 @@ function renderShipSchematic(){
 }
 function renderFishingSchematic(){
   const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod"],["reel","リール",run.rod.reel+"リール","gear-slot-reel"],["line","ライン",run.rod.line+"ライン","gear-slot-line"],["hook","フック",(hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック"),"gear-slot-hook"]];
-  return `<div class="maintPanel">${materialsStripHTML()}<div class="gearBlueprint"><div class="rodPath"></div>${parts.map(([k,lbl,title,cls])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><small>${lbl}</small><strong>${title}</strong></button>`).join("")}</div></div>`;
+  return `<div class="maintPanel">${materialsStripHTML()}<div class="gearBlueprint sideFishingView"><div class="gearRod"></div><div class="gearLine"></div><div class="gearHookPoint"></div>${parts.map(([k,lbl,title,cls])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><small>${lbl}</small><strong>${title}</strong></button>`).join("")}</div></div>`;
 }
 function currentCardHTML(type,inst,slotIndex){
   const d=getDef(type,inst.id), cost=normalizeCost(itemUpgradeCost(type,inst));
