@@ -849,3 +849,9 @@ button.danger{background:#442029;border-color:#7a3440}
     top:242px;
   }
 }
+
+
+/* ===== v13 storage + overflow ===== */
+.maintMajorTabs{grid-template-columns:repeat(3,1fr) !important;}
+.overflowPickList .simpleCard{margin-bottom:8px;}
+.overflowPickList .simpleCard:last-child{margin-bottom:0;}

@@ -416,15 +416,19 @@ function finishFishing(success,salvage){
    run.materials[c.kind.mat]+=c.amount;
    detail="クラフトや機体強化に使用できます。";
  }else{
-   isNew=markMachineDiscovered(c.kind.type,c.kind.id);
-   const inst={id:c.kind.id,uid:uid(),type:c.kind.type,lvl:1};
-   if(run.storage.length<run.storageCap)run.storage.push(inst);
-   else disassemble(c.kind);
-   const bp=advanceBlueprint(c.kind);
-   detail=bp.unlockedNow?"設計図完成！ 製作可能になりました。":
-          bp.unlocked?"設計図は解禁済みです。":
-          `設計図解析 ${bp.count}/${bp.need}（あと${bp.remaining}回）`;
-   if(run.storage.length>=run.storageCap)detail+=" 倉庫満杯のため自動分解されました。";
+   const revealKind={...c.kind};
+   run.pendingCatch=null;
+   run.nextBite=rand(5,9);
+   run.mode="lootResolve";
+   saveMeta();saveRun();switchMode("fishing");
+   receiveMachineItem(c.kind, ({isNew:resolvedNew, detail:resolvedDetail})=>{
+     run.mode="lootReveal";
+     saveMeta();saveRun();switchMode("fishing");
+     showLootReveal(revealKind,c.amount,resolvedNew,resolvedDetail,()=>{
+       run.mode="fishing";setGameNavLocked(false);saveRun();switchMode("fishing");
+     });
+   });
+   return;
  }
  const revealKind={...c.kind};
  run.pendingCatch=null;
@@ -593,13 +597,16 @@ function finishSalvage(success){
      run.materials[s.kind.mat]+=shownAmount;
      detail="海賊船から回収した素材。";
    }else{
-     isNew=markMachineDiscovered(s.kind.type,s.kind.id);
-     const inst={id:s.kind.id,uid:uid(),type:s.kind.type,lvl:1};
-     if(run.storage.length<run.storageCap)run.storage.push(inst);else disassemble(s.kind);
-     const bp=advanceBlueprint(s.kind);
-     detail=bp.unlockedNow?"設計図完成！ 製作可能になりました。":
-            bp.unlocked?"設計図は解禁済みです。":
-            `設計図解析 ${bp.count}/${bp.need}（あと${bp.remaining}回）`;
+     const reveal={...s.kind};
+     run.pendingSalvage=null;run.enemy=null;run.nextPirate=run.distance+rand(2.3,3.6);run.nextBite=rand(3.5,7);run.mode="lootResolve";saveRun();
+     switchMode("fishing");
+     receiveMachineItem(s.kind, ({isNew:resolvedNew, detail:resolvedDetail})=>{
+       run.mode="lootReveal";saveRun();
+       showLootReveal(reveal,shownAmount,resolvedNew,resolvedDetail,()=>{
+         run.mode="fishing";setGameNavLocked(false);saveRun();switchMode("fishing");renderBattleActions();
+       });
+     });
+     return;
    }
    const reveal={...s.kind};
    run.pendingSalvage=null;run.enemy=null;run.nextPirate=run.distance+rand(2.3,3.6);run.nextBite=rand(3.5,7);run.mode="lootReveal";saveRun();
@@ -1059,6 +1066,82 @@ function loadPanelHTML(){
   const ratio=Math.min(1,getLoad()/Math.max(1,run.maxLoad));
   return `<div><div class="statRow"><span>過負荷ゲージ</span><strong>${getLoad()} / ${run.maxLoad}</strong></div><div class="loadMeterBar"><div style="width:${ratio*100}%"></div></div><div class="statRow" style="margin-top:8px"><span>武器 / 装備 / 倉庫</span><strong>${run.weapons.length}/${run.weaponSlots} ・ ${run.equipments.length}/${run.equipSlots} ・ ${run.storage.length}/${run.storageCap}</strong></div></div>`;
 }
+
+function machineDetailText(kind){
+  const bp=advanceBlueprint(kind);
+  return bp.unlockedNow?"設計図完成！ 製作可能になりました。":
+         bp.unlocked?"設計図は解禁済みです。":
+         `設計図解析 ${bp.count}/${bp.need}（あと${bp.remaining}回）`;
+}
+function newLootBodyHTML(kind, extraText=""){
+  const def=getDef(kind.type, kind.id);
+  if(!def) return `<div class="bigCurrentCard"><div class="detailSectionTitle">入手品</div><p>${extraText}</p></div>`;
+  return `<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(kind.type,kind.id)}</div><div><div class="detailSectionTitle" style="margin:0">${def.name}</div><div style="font-size:.8rem;color:#aac0de">${def.desc}</div></div></div><div class="detailMeta">${(kind.type==="weapon"?weaponDetailMeta(def,{lvl:1}).map(x=>`<span class="metaChip">${x}</span>`).join(""):`<span class="metaChip">負荷 ${def.load}</span>`)}<span class="metaChip">倉庫 ${run.storage.length}/${run.storageCap}</span></div>${extraText?`<div style="margin-top:10px;font-size:.8rem;color:#afbdd8">${extraText}</div>`:""}</div>`;
+}
+function simpleWarehouseCardHTML(inst){
+  const d=getDef(inst.type,inst.id); if(!d) return "";
+  const extra = inst.type==="weapon"
+    ? `<div class="miniMeta"><span>負荷 ${d.load}</span>${d.active?`<span>ACT ${d.active.name}</span>`:""}</div>`
+    : `<div class="miniMeta"><span>負荷 ${d.load}</span>${d.hp?`<span>HP +${Math.round(d.hp*equipLevelMult(inst))}</span>`:""}</div>`;
+  return `<div class="simpleCard tapCard" data-open-warehouse="${inst.uid}"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(inst.type,inst.id)}</div><div><h4>${d.name}</h4><p>Lv.${inst.lvl||1} ・ ${inst.type==="weapon"?weaponSummaryLine(d,inst):instanceStatLine(inst.type,inst)}</p>${extra}</div></div></div>`;
+}
+function renderWarehouseDetail(){
+  const items=[...run.storage];
+  let h=`<div class="maintPanel"><div class="statRow"><span>保管数</span><strong>${run.storage.length} / ${run.storageCap}</strong></div>`;
+  if(!items.length){
+    h+=`<div class="sectionBlock"><p class="emptyText">倉庫は空です。</p></div>`;
+  }else{
+    h+=`<div class="sectionBlock"><h4 class="detailSectionTitle">保管アイテム一覧</h4><div class="detailList">${items.map(inst=>simpleWarehouseCardHTML(inst)).join("")}</div></div>`;
+  }
+  h+=`</div>`;
+  return h;
+}
+function receiveMachineItem(kind, onResolved){
+  const isNew=markMachineDiscovered(kind.type,kind.id);
+  const detail=machineDetailText(kind);
+  const inst={id:kind.id,uid:uid(),type:kind.type,lvl:1};
+  if(run.storage.length<run.storageCap){
+    run.storage.push(inst);
+    onResolved({isNew, detail});
+    return;
+  }
+  openInventoryOverflowChoice(inst, kind, ({detailSuffix=""}={})=>{
+    onResolved({isNew, detail:detail + (detailSuffix?` ${detailSuffix}`:"")});
+  });
+}
+function openInventoryOverflowChoice(inst, kind, onDone){
+  const body = newLootBodyHTML(kind, "倉庫が満杯です。拾った品を分解するか、倉庫の品を1つ分解して空きを作ってください。");
+  openActionModal("倉庫が満杯です", body, [
+    {label:"拾ったものを分解", danger:true, onClick:()=>{ disassemble(kind); saveRun(); onDone({detailSuffix:"入手品を分解しました。"}); }},
+    {label:"倉庫から1つ分解して入れる", primary:true, onClick:()=>{ openInventoryOverflowStoragePicker(inst, kind, onDone); }}
+  ]);
+}
+function openInventoryOverflowStoragePicker(inst, kind, onDone){
+  const list = run.storage.length ? `<div class="detailList overflowPickList">${run.storage.map(item=>simpleWarehouseCardHTML(item)).join("")}</div>` : `<p class="emptyText">分解できる保管品がありません。</p>`;
+  const body = `${newLootBodyHTML(kind, "どの保管アイテムを分解するか選んでください。分解後、新しい入手品が自動で倉庫に入ります。")}<div class="sectionBlock"><h4 class="detailSectionTitle">分解して空きを作る</h4>${list}</div>`;
+  openActionModal("倉庫から1つ分解", body, [
+    {label:"戻る", onClick:()=>{ openInventoryOverflowChoice(inst, kind, onDone); }}
+  ]);
+  $$('[data-open-warehouse]').forEach(card=>card.onclick=()=>{
+    const uidv=card.dataset.openWarehouse;
+    const idx=run.storage.findIndex(x=>x.uid===uidv);
+    if(idx<0) return;
+    const [removed]=run.storage.splice(idx,1);
+    disassemble(removed);
+    run.storage.push(inst);
+    saveRun();
+    closeActionModal();
+    onDone({detailSuffix:`${itemName({type:removed.type,id:removed.id})} を分解し、入手品を収納しました。`});
+  });
+}
+function openWarehouseItemModal(inst){
+  const d=getDef(inst.type, inst.id); if(!d) return;
+  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(inst.type,inst.id)}</div><div><div class="detailSectionTitle" style="margin:0">${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta">${formatItemMeta(inst.type,inst).map(x=>`<span class="metaChip">${x}</span>`).join("")}</div></div>`;
+  openActionModal(d.name, body, [
+    {label:"機体装備画面へ", primary:true, onClick:()=>{ renderMaintenanceSubScreen("ship", `${inst.type}:0`); toast("装備したいスロットを選んでください"); }},
+    {label:"分解", danger:true, onClick:()=>{ disasmStorage(inst.uid); renderMaintenanceSubScreen("storage","all"); }}
+  ]);
+}
 function renderShipSchematic(){
   let left='', right='';
   for(let i=0;i<run.weaponSlots;i++){
@@ -1158,13 +1241,20 @@ function renderFishingDetail(slot){
 function renderMaintenanceSubScreen(major=maintState.major||"ship", slot=maintState.slot){
   ensureRunShape(); ensureLevels(); recalcPlayer();
   maintState.major=major;
-  if(!slot) slot = major==="ship" ? "hull" : "rod";
+  if(!slot) slot = major==="ship" ? "hull" : major==="fishing" ? "rod" : "all";
   maintState.slot=slot;
   $("#subScreenTitle").textContent="整備";
   let h = materialsStripHTML();
-  h += `<div class="maintMajorTabs"><button data-maint-major="ship" class="${major==="ship"?"active":""}">機体</button><button data-maint-major="fishing" class="${major==="fishing"?"active":""}">釣具</button></div>`;
-  h += major==="ship" ? renderShipSchematic() : renderFishingSchematic();
-  h += major==="ship" ? renderShipDetail(slot) : renderFishingDetail(slot);
+  h += `<div class="maintMajorTabs"><button data-maint-major="ship" class="${major==="ship"?"active":""}">機体</button><button data-maint-major="fishing" class="${major==="fishing"?"active":""}">釣具</button><button data-maint-major="storage" class="${major==="storage"?"active":""}">倉庫</button></div>`;
+  if(major==="ship"){
+    h += renderShipSchematic();
+    h += renderShipDetail(slot);
+  }else if(major==="fishing"){
+    h += renderFishingSchematic();
+    h += renderFishingDetail(slot);
+  }else{
+    h += renderWarehouseDetail();
+  }
   $("#subScreenBody").innerHTML=h;
   $$("[data-maint-major]").forEach(b=>b.onclick=()=>renderMaintenanceSubScreen(b.dataset.maintMajor, null));
   $$("[data-maint-slot]").forEach(b=>b.onclick=()=>renderMaintenanceSubScreen(maintState.major, b.dataset.maintSlot));
@@ -1175,6 +1265,7 @@ function renderMaintenanceSubScreen(major=maintState.major||"ship", slot=maintSt
   $$("[data-open-craft]").forEach(b=>b.onclick=()=>{ const [type,id,slotIndexStr]=b.dataset.openCraft.split(":"); openCraftItemModal(type, id, Number(slotIndexStr)); });
   $$("[data-open-fishing-owned]").forEach(b=>b.onclick=()=>{ const [type,id]=b.dataset.openFishingOwned.split(":"); openFishingOwnedModal(type,id); });
   $$("[data-open-fishing-craft]").forEach(b=>b.onclick=()=>{ const [type,id]=b.dataset.openFishingCraft.split(":"); openFishingCraftModal(type,id); });
+  $$("[data-open-warehouse]").forEach(b=>b.onclick=()=>{ const inst = run.storage.find(x=>x.uid===b.dataset.openWarehouse); if(inst) openWarehouseItemModal(inst); });
 }
 function equipSpecificFromStorage(uidv, type, slotIndex){
   ensureLevels();
