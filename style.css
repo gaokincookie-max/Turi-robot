@@ -701,3 +701,151 @@ button.danger{background:#442029;border-color:#7a3440}
     top:244px;
   }
 }
+
+
+/* ===== v12 layout correction from user sketch ===== */
+/* Main fishing scene: move the line to start near the rod tip, closer to the robot */
+.menuShip .fishingRod{
+  left:82px;
+  bottom:60px;
+  width:74px;
+  height:8px;
+  transform:rotate(-49deg);
+}
+.menuShip .fishingLine{
+  left:131px;
+  top:12px;
+  height:124px;
+}
+
+.playerShip{
+  width:178px;
+  height:92px;
+}
+.playerShip .robot{
+  left:72px;
+}
+.playerShip .fishingRod{
+  left:98px;          /* rod root near the robot's right side */
+  bottom:52px;
+  width:76px;         /* shorter, so the tip doesn't go too far right */
+  height:9px;
+  transform:rotate(-50deg);
+  transform-origin:left center;
+}
+.playerShip .fishingLine{
+  left:140px;         /* line falls from near the rod tip */
+  top:22px;
+  height:332px;
+}
+.biteIndicator{
+  left:calc(50% + 54px)!important;
+  top:18%!important;
+}
+
+/* Maintenance fishing layout: keep slots and illustration separated */
+.gearBlueprint.sideFishingView{
+  min-height:346px;
+}
+.gearRod{
+  left:78px;
+  top:255px;
+  width:162px;
+  height:14px;
+  transform:rotate(-48deg);
+  transform-origin:left center;
+}
+.gearReel{
+  left:108px;
+  top:252px;
+  width:26px;
+  height:26px;
+}
+.gearLine{
+  left:218px;
+  top:82px;
+  width:4px;
+  height:174px;
+}
+.gearHookPoint{
+  left:212px;
+  top:253px;
+  width:15px;
+  height:15px;
+}
+.gear-slot-rod{
+  left:10px;
+  top:146px;
+}
+.gear-slot-reel{
+  left:18px;
+  top:260px;
+}
+.gear-slot-line{
+  right:18px;
+  top:24px;
+}
+.gear-slot-hook{
+  right:18px;
+  top:246px;
+}
+
+@media (max-width:560px){
+  .playerShip{
+    width:170px;
+    height:88px;
+  }
+  .playerShip .robot{
+    left:69px;
+  }
+  .playerShip .fishingRod{
+    left:91px;
+    bottom:49px;
+    width:72px;
+  }
+  .playerShip .fishingLine{
+    left:129px;
+    top:24px;
+    height:320px;
+  }
+
+  .gearBlueprint.sideFishingView{
+    min-height:328px;
+  }
+  .gearRod{
+    left:54px;
+    top:248px;
+    width:150px;
+  }
+  .gearReel{
+    left:82px;
+    top:245px;
+    width:24px;
+    height:24px;
+  }
+  .gearLine{
+    left:172px;
+    top:86px;
+    height:166px;
+  }
+  .gearHookPoint{
+    left:166px;
+    top:248px;
+  }
+  .gear-slot-rod{
+    left:4px;
+    top:146px;
+  }
+  .gear-slot-reel{
+    left:8px;
+    top:256px;
+  }
+  .gear-slot-line{
+    right:6px;
+    top:24px;
+  }
+  .gear-slot-hook{
+    right:6px;
+    top:242px;
+  }
+}
