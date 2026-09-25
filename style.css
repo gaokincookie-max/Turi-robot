@@ -483,3 +483,221 @@ button.danger{background:#442029;border-color:#7a3440}
     top:222px;
   }
 }
+
+
+/* ===== v11 fishing polish ===== */
+.ship{
+  overflow:visible;
+}
+.ship .fishingRod{
+  position:absolute;
+  z-index:1;
+  border-radius:999px;
+  background:linear-gradient(90deg,#eff5ff,#a8bee3 58%,#6b82ac);
+  border:2px solid #2a3954;
+  box-shadow:0 0 12px #62f0ff20;
+}
+.ship .fishingRod:before{
+  content:"";
+  position:absolute;
+  left:12px;
+  top:50%;
+  transform:translateY(-50%);
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#dbe8ff 0 3px,#7e96bf 4px 9px,#32435f 10px 100%);
+  border:2px solid #2c3b57;
+}
+.ship .fishingRod:after{
+  content:"";
+  position:absolute;
+  right:-6px;
+  top:-4px;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#edf7ff;
+  border:2px solid #30405d;
+}
+.menuShip .fishingRod{
+  left:76px;
+  bottom:63px;
+  width:86px;
+  height:8px;
+  transform:rotate(-48deg);
+  transform-origin:left center;
+}
+.menuShip .fishingLine{
+  left:141px;
+  top:4px;
+  height:132px;
+}
+.playerShip{
+  width:185px;
+  height:90px;
+}
+.playerShip .fishingRod{
+  left:84px;
+  bottom:72px;
+  width:98px;
+  height:9px;
+  transform:rotate(-50deg);
+  transform-origin:left center;
+}
+.playerShip .fishingLine{
+  left:155px;
+  top:-3px;
+  height:356px;
+}
+.playerShip .robot{
+  left:70px;
+}
+.biteIndicator{
+  left:calc(50% + 72px)!important;
+  top:17%!important;
+}
+
+.simpleCard.tapCard{
+  cursor:pointer;
+  transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease;
+}
+.simpleCard.tapCard:active{
+  transform:scale(.985);
+}
+.simpleCard.tapCard:hover{
+  border-color:#58e7ff;
+  box-shadow:0 0 0 1px #58e7ff33 inset;
+}
+
+/* equipment side-view */
+.gearBlueprint.sideFishingView{
+  min-height:340px;
+  overflow:hidden;
+}
+.gearRod{
+  left:40px;
+  top:250px;
+  width:190px;
+  height:14px;
+  border-radius:999px;
+  background:linear-gradient(90deg,#eef5ff,#a9bfe4 58%,#6e85ae);
+  border:2px solid #2d3b58;
+  transform:rotate(-50deg);
+  transform-origin:left center;
+  box-shadow:0 0 12px #5cf2ff1f;
+}
+.gearRod:after{
+  content:"";
+  position:absolute;
+  right:-5px;
+  top:-4px;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#eef7ff;
+  border:2px solid #30405d;
+}
+.gearReel{
+  position:absolute;
+  left:60px;
+  top:250px;
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#dbe8ff 0 5px,#7d95bd 6px 14px,#32425e 15px 100%);
+  border:2px solid #30405d;
+  box-shadow:0 0 10px #5cf2ff24;
+}
+.gearLine{
+  left:158px;
+  top:99px;
+  width:4px;
+  height:156px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#f2f8ff,#c6d9ef);
+  box-shadow:0 0 10px #e8f8ff22;
+}
+.gearHookPoint{
+  left:152px;
+  top:252px;
+  width:15px;
+  height:15px;
+  border-radius:50%;
+  background:#f0f8ff;
+  border:2px solid #334564;
+  box-shadow:0 0 10px #ffffff26;
+}
+.gear-slot-rod{
+  left:8px;
+  top:152px;
+}
+.gear-slot-reel{
+  left:24px;
+  top:258px;
+}
+.gear-slot-line{
+  left:auto;
+  right:18px;
+  top:30px;
+  transform:none;
+}
+.gear-slot-hook{
+  right:16px;
+  top:250px;
+}
+@media (max-width:560px){
+  .playerShip{
+    width:176px;
+    height:88px;
+  }
+  .playerShip .fishingRod{
+    left:78px;
+    bottom:69px;
+    width:94px;
+  }
+  .playerShip .fishingLine{
+    left:147px;
+    top:0;
+    height:342px;
+  }
+  .gearBlueprint.sideFishingView{
+    min-height:320px;
+  }
+  .gearRod{
+    left:26px;
+    top:244px;
+    width:172px;
+  }
+  .gearReel{
+    left:42px;
+    top:244px;
+    width:24px;
+    height:24px;
+  }
+  .gearLine{
+    left:135px;
+    top:106px;
+    height:143px;
+  }
+  .gearHookPoint{
+    left:129px;
+    top:246px;
+  }
+  .gear-slot-rod{
+    left:4px;
+    top:154px;
+  }
+  .gear-slot-reel{
+    left:12px;
+    top:252px;
+  }
+  .gear-slot-line{
+    right:6px;
+    top:30px;
+  }
+  .gear-slot-hook{
+    right:6px;
+    top:244px;
+  }
+}

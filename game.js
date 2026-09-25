@@ -986,16 +986,41 @@ function prettyItemIcon(type,id){
  return symbol;
 }
 function getDef(type,id){ return (type==="weapon"?weapons:equipments).find(x=>x.id===id); }
+function weaponProfile(defOrId){
+  const id=typeof defOrId==="string" ? defOrId : defOrId?.id;
+  return {
+    pulse:{label:"高", interval:1.1},
+    bolt:{label:"低", interval:1.9},
+    laser:{label:"中", interval:1.3},
+    missile:{label:"低", interval:1.8},
+    emp:{label:"低", interval:2.0},
+    barrier:{label:"低", interval:2.2},
+    scatter:{label:"やや高", interval:1.2},
+    piercer:{label:"かなり低", interval:2.5}
+  }[id] || {label:"中", interval:1.5};
+}
+function weaponPowerValue(def,inst){
+  return Math.round((def?.atk||0) * weaponLevelMult(inst||{lvl:1}));
+}
+function weaponSummaryLine(def,inst){
+  const p=weaponProfile(def);
+  return `攻撃力 ${weaponPowerValue(def,inst)} / 攻撃頻度 ${p.label}`;
+}
+function weaponDetailMeta(def,inst){
+  const p=weaponProfile(def);
+  const arr=[`攻撃力 ${weaponPowerValue(def,inst)}`,`攻撃頻度 ${p.label}`,`発射間隔 約${p.interval.toFixed(1)}秒`,`負荷 ${def.load}`];
+  if(def.active) arr.push(`ACT ${def.active.name}`);
+  return arr;
+}
 function instanceStatLine(type,inst){
   const d=getDef(type,inst.id); if(!d) return "";
-  if(type==="weapon") return `ATK ${Math.round(d.atk*weaponLevelMult(inst))} / 負荷 ${d.load}` + (d.active?` / ACT ${d.active.name}`:"");
+  if(type==="weapon") return weaponSummaryLine(d,inst) + ` / 負荷 ${d.load}` + (d.active?` / ACT ${d.active.name}`:"");
   return `負荷 ${d.load}` + (d.hp?` / HP +${Math.round(d.hp*equipLevelMult(inst))}`:"");
 }
 function formatItemMeta(type,inst){
   const d=getDef(type,inst.id); if(!d) return [];
   if(type==="weapon"){
-    const arr=[`Lv.${inst.lvl||1}`,`ATK ${Math.round(d.atk*weaponLevelMult(inst))}`,`負荷 ${d.load}`];
-    if(d.active) arr.push(`ACT ${d.active.name}`);
+    const arr=[`Lv.${inst.lvl||1}`,...weaponDetailMeta(d,inst)];
     return arr;
   }
   const arr=[`Lv.${inst.lvl||1}`,`負荷 ${d.load}`];
@@ -1048,7 +1073,7 @@ function renderShipSchematic(){
 }
 function renderFishingSchematic(){
   const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod"],["reel","リール",run.rod.reel+"リール","gear-slot-reel"],["line","ライン",run.rod.line+"ライン","gear-slot-line"],["hook","フック",(hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック"),"gear-slot-hook"]];
-  return `<div class="maintPanel">${materialsStripHTML()}<div class="gearBlueprint sideFishingView"><div class="gearRod"></div><div class="gearLine"></div><div class="gearHookPoint"></div>${parts.map(([k,lbl,title,cls])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><small>${lbl}</small><strong>${title}</strong></button>`).join("")}</div></div>`;
+  return `<div class="maintPanel">${materialsStripHTML()}<div class="gearBlueprint sideFishingView"><div class="gearRod"></div><div class="gearReel"></div><div class="gearLine"></div><div class="gearHookPoint"></div>${parts.map(([k,lbl,title,cls])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><small>${lbl}</small><strong>${title}</strong></button>`).join("")}</div></div>`;
 }
 function currentCardHTML(type,inst,slotIndex){
   const d=getDef(type,inst.id), cost=normalizeCost(itemUpgradeCost(type,inst));
@@ -1060,13 +1085,19 @@ function hullCardHTML(){
 }
 function simpleStorageCardHTML(inst,type,slotIndex){
   const d=getDef(type,inst.id);
-  return `<div class="simpleCard"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(type,inst.id)}</div><div><h4>${d.name}</h4><p>Lv.${inst.lvl||1} ・ ${instanceStatLine(type,inst)}</p></div></div><button data-open-owned="${type}:${inst.uid}:${slotIndex}">詳細</button></div>`;
+  const extra = type==="weapon"
+    ? `<div class="miniMeta"><span>負荷 ${d.load}</span>${d.active?`<span>ACT ${d.active.name}</span>`:""}</div>`
+    : `<div class="miniMeta"><span>負荷 ${d.load}</span>${d.hp?`<span>HP +${Math.round(d.hp*equipLevelMult(inst))}</span>`:""}</div>`;
+  return `<div class="simpleCard tapCard" data-open-owned="${type}:${inst.uid}:${slotIndex}"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(type,inst.id)}</div><div><h4>${d.name}</h4><p>Lv.${inst.lvl||1} ・ ${type==="weapon"?weaponSummaryLine(d,inst):instanceStatLine(type,inst)}</p>${extra}</div></div></div>`;
 }
 function simpleCraftCardHTML(type,d,slotIndex,mode){
   const count=blueprintCount(type,d.id), unlocked=isBlueprintUnlocked(type,d.id), need=blueprintNeed(d), remain=Math.max(0,need-count);
-  let sub = type==="weapon" ? `ATK ${d.atk} / 負荷 ${d.load}` : `負荷 ${d.load}`;
-  if(mode==="lockedKnown") sub += ` ・ 解析 ${count}/${need}`;
-  return `<div class="simpleCard"><div class="simpleCardHead"><div class="simpleCardIcon">${mode==="unknown"?"?":prettyItemIcon(type,d.id)}</div><div><h4>${mode==="unknown"?"？？？？":d.name}</h4><p>${mode==="unknown"?"未発見":d.desc}</p></div></div>${mode==="unknown"?"":`<div class="miniMeta"><span>${sub}</span>${mode==="lockedKnown"?`<span>あと${remain}回入手</span>`:""}</div><button data-open-craft="${type}:${d.id}:${slotIndex}">詳細</button>`}</div>`;
+  const summary = type==="weapon"
+    ? `<div class="miniMeta"><span>攻撃力 ${d.atk}</span><span>攻撃頻度 ${weaponProfile(d).label}</span><span>負荷 ${d.load}</span>${mode==="lockedKnown"?`<span>あと${remain}回入手</span>`:""}</div>`
+    : `<div class="miniMeta"><span>負荷 ${d.load}</span>${mode==="lockedKnown"?`<span>解析 ${count}/${need}</span><span>あと${remain}回入手</span>`:""}</div>`;
+  const attr = mode==="unknown" ? "" : ` data-open-craft="${type}:${d.id}:${slotIndex}"`;
+  const cls = mode==="unknown" ? "simpleCard" : "simpleCard tapCard";
+  return `<div class="${cls}"${attr}><div class="simpleCardHead"><div class="simpleCardIcon">${mode==="unknown"?"?":prettyItemIcon(type,d.id)}</div><div><h4>${mode==="unknown"?"？？？？":d.name}</h4><p>${mode==="unknown"?"未発見":d.desc}</p>${mode==="unknown"?"":summary}</div></div></div>`;
 }
 function fishingOwnedList(type){ return (run.fishingInventory[type]||[]).filter(x=>type==="hook"?x!==run.rod.hook:x!==run.rod[type]); }
 function fishingCurrentCardHTML(type){
@@ -1077,12 +1108,12 @@ function fishingCurrentCardHTML(type){
 function fishingOwnedCardHTML(type,id){
   const name = type==="hook" ? (hookTypes.find(x=>x.id===id)?.name||id) : `${id}${{rod:"ロッド",reel:"リール",line:"ライン"}[type]}`;
   const desc = type==="hook" ? (hookTypes.find(x=>x.id===id)?.desc||"") : (id==="安定"?"成功ゾーンへの追従が楽になる":id==="高速"?"回収進捗が速くなる":id==="重量"?"タップ上昇力が強くなる":"標準性能");
-  return `<div class="simpleCard"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(type,id)}</div><div><h4>${name}</h4><p>${desc}</p></div></div><button data-open-fishing-owned="${type}:${id}">詳細</button></div>`;
+  return `<div class="simpleCard tapCard" data-open-fishing-owned="${type}:${id}"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(type,id)}</div><div><h4>${name}</h4><p>${desc}</p></div></div></div>`;
 }
 function fishingCraftCardHTML(type,id,cost){
   const name = type==="hook" ? (hookTypes.find(x=>x.id===id)?.name||id) : `${id}${{rod:"ロッド",reel:"リール",line:"ライン"}[type]}`;
   const desc = type==="hook" ? (hookTypes.find(x=>x.id===id)?.desc||"") : (id==="安定"?"成功ゾーンへの追従が楽になる":id==="高速"?"回収進捗が速くなる":id==="重量"?"タップ上昇力が強くなる":"標準性能");
-  return `<div class="simpleCard"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(type,id)}</div><div><h4>${name}</h4><p>${desc}</p></div></div><button data-open-fishing-craft="${type}:${id}">詳細</button></div>`;
+  return `<div class="simpleCard tapCard" data-open-fishing-craft="${type}:${id}"><div class="simpleCardHead"><div class="simpleCardIcon">${prettyItemIcon(type,id)}</div><div><h4>${name}</h4><p>${desc}</p></div></div></div>`;
 }
 function renderShipDetail(slot){
   if(slot==="hull") return hullCardHTML();
@@ -1192,7 +1223,7 @@ function openOwnedItemModal(type, inst, slotIndex){
 function openCraftItemModal(type,id,slotIndex){
   const d=getDef(type,id); if(!d) return;
   const count=blueprintCount(type,id), unlocked=isBlueprintUnlocked(type,id), need=blueprintNeed(d), remain=Math.max(0,need-count);
-  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(type,id)}</div><div><div class="detailSectionTitle" style="margin:0">${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta"><span class="metaChip">${type==="weapon"?`ATK ${d.atk}`:"装備"}</span><span class="metaChip">負荷 ${d.load}</span>${!unlocked?`<span class="metaChip">解析 ${count}/${need}</span><span class="metaChip">あと${remain}回入手</span>`:"<span class='metaChip'>設計図完成</span>"}</div>${unlocked?materialNeedListHTML(d.cost):""}</div>`;
+  const body=`<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">${prettyItemIcon(type,id)}</div><div><div class="detailSectionTitle" style="margin:0">${d.name}</div><div style="font-size:.8rem;color:#aac0de">${d.desc}</div></div></div><div class="detailMeta">${type==="weapon" ? weaponDetailMeta(d,{lvl:1}).map(x=>`<span class="metaChip">${x}</span>`).join("") : `<span class="metaChip">負荷 ${d.load}</span>`}${!unlocked?`<span class="metaChip">解析 ${count}/${need}</span><span class="metaChip">あと${remain}回入手</span>`:"<span class='metaChip'>設計図完成</span>"}</div>${unlocked?materialNeedListHTML(d.cost):""}</div>`;
   const buttons = unlocked ? [{label:"作成", primary:true, onClick:()=>{ craftToStorage(type,id); renderMaintenanceSubScreen("ship", `${type}:${slotIndex}`); }}] : [{label:"OK", primary:true, onClick:()=>{}}];
   openActionModal(d.name, body, buttons);
 }
