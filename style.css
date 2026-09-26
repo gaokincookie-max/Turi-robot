@@ -1042,3 +1042,61 @@ button.danger{background:#442029;border-color:#7a3440}
     font-size:.68rem;
   }
 }
+
+/* ===== v14b follow-up polish: bigger icons + corrected ship crop display ===== */
+.bigIconBadge,
+.simpleCardIcon{
+  overflow:visible;
+  padding:0;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+}
+.bigIconBadge{
+  width:84px;
+  height:84px;
+  border-radius:0;
+  flex:none;
+}
+.simpleCardIcon{
+  width:54px;
+  height:54px;
+  border-radius:0;
+  flex:none;
+}
+.bigIconBadge .itemAssetSprite,
+.bigIconBadge .hullBadgeSprite,
+.simpleCardIcon .itemAssetSprite{
+  width:100%;
+  height:100%;
+  transform:none;
+}
+.visualSlot{
+  min-height:100px;
+  gap:4px;
+}
+.visualSlot .itemAssetSprite{
+  width:72px;
+  height:56px;
+  margin-bottom:4px;
+}
+.shipVisualFrame{
+  overflow:hidden;
+}
+@media(max-width:560px){
+  .bigIconBadge{
+    width:76px;
+    height:76px;
+  }
+  .simpleCardIcon{
+    width:48px;
+    height:48px;
+  }
+  .visualSlot{
+    min-height:94px;
+  }
+  .visualSlot .itemAssetSprite{
+    width:66px;
+    height:50px;
+  }
+}
