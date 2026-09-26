@@ -1166,7 +1166,7 @@ button.danger{background:#442029;border-color:#7a3440}
 }
 .shipOverlaySprite.leftMount,
 .shipOverlaySprite.rightMount{
-  transform:translate(-50%,-50%) rotate(180deg) scale(1.40);
+  transform:translate(-50%,-50%) rotate(90deg) scale(1.40);
 }
 @media(max-width:560px){
   .shipEquipOverlay{
@@ -1174,6 +1174,24 @@ button.danger{background:#442029;border-color:#7a3440}
   }
   .shipOverlaySprite.leftMount,
   .shipOverlaySprite.rightMount{
-    transform:translate(-50%,-50%) rotate(180deg) scale(1.30);
+    transform:translate(-50%,-50%) rotate(90deg) scale(1.30);
+  }
+}
+
+/* ===== v14f weapon rotation correction ===== */
+.shipEquipOverlay{
+  transform:translate(-50%,-50%) scale(1.30);
+}
+.shipOverlaySprite.leftMount,
+.shipOverlaySprite.rightMount{
+  transform:translate(-50%,-50%) rotate(90deg) scale(1.40);
+}
+@media(max-width:560px){
+  .shipEquipOverlay{
+    transform:translate(-50%,-50%) scale(1.22);
+  }
+  .shipOverlaySprite.leftMount,
+  .shipOverlaySprite.rightMount{
+    transform:translate(-50%,-50%) rotate(90deg) scale(1.30);
   }
 }
