@@ -1145,7 +1145,7 @@ button.danger{background:#442029;border-color:#7a3440}
   transform:translate(-50%,-50%) rotate(-90deg) scale(1.30);
 }
 .shipOverlaySprite.rightMount{
-  transform:translate(-50%,-50%) rotate(90deg) scale(1.30);
+  transform:translate(-50%,-50%) rotate(90deg) scale(1.42);
 }
 @media(max-width:560px){
   .shipEquipOverlay{
@@ -1166,7 +1166,7 @@ button.danger{background:#442029;border-color:#7a3440}
 }
 .shipOverlaySprite.leftMount,
 .shipOverlaySprite.rightMount{
-  transform:translate(-50%,-50%) rotate(90deg) scale(1.40);
+  transform:translate(-50%,-50%) rotate(90deg) scale(1.52);
 }
 @media(max-width:560px){
   .shipEquipOverlay{
@@ -1174,7 +1174,7 @@ button.danger{background:#442029;border-color:#7a3440}
   }
   .shipOverlaySprite.leftMount,
   .shipOverlaySprite.rightMount{
-    transform:translate(-50%,-50%) rotate(90deg) scale(1.30);
+    transform:translate(-50%,-50%) rotate(90deg) scale(1.42);
   }
 }
 
@@ -1184,7 +1184,7 @@ button.danger{background:#442029;border-color:#7a3440}
 }
 .shipOverlaySprite.leftMount,
 .shipOverlaySprite.rightMount{
-  transform:translate(-50%,-50%) rotate(90deg) scale(1.40);
+  transform:translate(-50%,-50%) rotate(90deg) scale(1.52);
 }
 @media(max-width:560px){
   .shipEquipOverlay{
@@ -1192,6 +1192,6 @@ button.danger{background:#442029;border-color:#7a3440}
   }
   .shipOverlaySprite.leftMount,
   .shipOverlaySprite.rightMount{
-    transform:translate(-50%,-50%) rotate(90deg) scale(1.30);
+    transform:translate(-50%,-50%) rotate(90deg) scale(1.42);
   }
 }

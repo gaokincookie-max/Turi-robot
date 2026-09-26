@@ -1114,8 +1114,8 @@ function shipLayoutForLevel(lv){
   const layouts={
     1:{
       weapons:[
-        {x:24,y:38,w:34,h:22,side:"left"},
-        {x:76,y:38,w:34,h:22,side:"right"}
+        {x:20,y:38,w:34,h:22,side:"left"},
+        {x:80,y:38,w:34,h:22,side:"right"}
       ],
       equips:[
         {x:50,y:34,w:22,h:18},
@@ -1124,9 +1124,9 @@ function shipLayoutForLevel(lv){
     },
     2:{
       weapons:[
-        {x:24,y:31,w:31,h:20,side:"left"},
-        {x:76,y:31,w:31,h:20,side:"right"},
-        {x:24,y:51,w:29,h:19,side:"left"}
+        {x:20,y:31,w:31,h:20,side:"left"},
+        {x:80,y:31,w:31,h:20,side:"right"},
+        {x:19,y:51,w:29,h:19,side:"left"}
       ],
       equips:[
         {x:50,y:30,w:21,h:17},
@@ -1136,10 +1136,10 @@ function shipLayoutForLevel(lv){
     },
     3:{
       weapons:[
-        {x:23,y:29,w:30,h:19,side:"left"},
-        {x:77,y:29,w:30,h:19,side:"right"},
-        {x:23,y:48,w:30,h:19,side:"left"},
-        {x:77,y:48,w:30,h:19,side:"right"}
+        {x:19,y:29,w:30,h:19,side:"left"},
+        {x:81,y:29,w:30,h:19,side:"right"},
+        {x:18,y:48,w:30,h:19,side:"left"},
+        {x:82,y:48,w:30,h:19,side:"right"}
       ],
       equips:[
         {x:50,y:28,w:20,h:16},
@@ -1150,11 +1150,11 @@ function shipLayoutForLevel(lv){
     },
     4:{
       weapons:[
-        {x:22,y:27,w:28,h:18,side:"left"},
-        {x:78,y:27,w:28,h:18,side:"right"},
-        {x:22,y:44,w:28,h:18,side:"left"},
-        {x:78,y:44,w:28,h:18,side:"right"},
-        {x:22,y:61,w:27,h:17,side:"left"}
+        {x:18,y:27,w:28,h:18,side:"left"},
+        {x:82,y:27,w:28,h:18,side:"right"},
+        {x:17,y:44,w:28,h:18,side:"left"},
+        {x:83,y:44,w:28,h:18,side:"right"},
+        {x:17,y:61,w:27,h:17,side:"left"}
       ],
       equips:[
         {x:50,y:24,w:18,h:15},
