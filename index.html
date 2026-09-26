@@ -121,27 +121,31 @@
         <div id="floatingHint" class="floatingHint"></div>
       </div>
 
-      <div id="battleScene" class="modeLayer">
-        <div id="enemyArea" class="enemyArea">
+      <div id="battleScene" class="modeLayer battleSceneV2">
+        <div id="enemyArea" class="enemyArea battleEnemyArea">
           <div id="enemyName" class="enemyName">SCRAP RAIDER</div>
+          <div id="enemyStatsLine" class="enemyStatsLine">WPN Lv.1 / EQ Lv.1 / DMG ×0.28</div>
           <div class="enemyHpBar"><div id="enemyHpFill"></div></div>
-          <div id="enemyShip" class="enemyShip">
-            <button class="enemyPart p-weapon" data-part="weapon">砲</button>
-            <button class="enemyPart p-core" data-part="core">船体</button>
-            <button class="enemyPart p-engine" data-part="engine">推</button>
-            <button class="enemyPart p-shield" data-part="shield">盾</button>
+          <div id="enemyShip" class="enemyShip battleShipStage">
+            <div id="enemyShipVisual" class="battleShipVisual"></div>
+            <button class="enemyPart target-left" data-part="leftWeapon" aria-label="左武器">左</button>
+            <button class="enemyPart target-right" data-part="rightWeapon" aria-label="右武器">右</button>
+            <button class="enemyPart target-equip" data-part="equipment" aria-label="装備">装</button>
+            <button class="enemyPart target-laser" data-part="laser" aria-label="レーザー">L</button>
+            <button class="enemyPart target-core" data-part="core" aria-label="本体">本</button>
           </div>
-          <div id="targetLabel" class="targetLabel">AUTO TARGET: HULL</div>
+          <div id="targetLabel" class="targetLabel">PRIORITY: HULL</div>
         </div>
 
-        <div class="battlePlayer">
-          <div class="miniShip"></div>
+        <div class="battlePlayer battlePlayerV2">
+          <div id="playerShipVisual" class="battleShipVisual"></div>
+          <div id="playerBarrier" class="playerBarrier"><i></i><i></i><i></i><i></i></div>
         </div>
 
         <div id="qteOverlay" class="qteOverlay">
-          <button id="qteBtn" class="qteBtn">回避</button>
+          <button id="qteBtn" class="qteBtn">防御</button>
           <div id="qteRing" class="qteRing"></div>
-          <div id="qteText">敵の大技！</div>
+          <div id="qteText">LASER LOCK</div>
         </div>
       </div>
 

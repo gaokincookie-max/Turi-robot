@@ -100,6 +100,40 @@ const visualAssets={
    bulk:"assets/equipment/e_cargo.png",
    sensor:"assets/equipment/e_sensor.png",
    stabilizer:"assets/equipment/e_salvage.png"
+ },
+ fishing:{
+   rod:{standard:"assets/fishing/rod/standard.png",stable:"assets/fishing/rod/stable.png",fast:"assets/fishing/rod/fast.png",heavy:"assets/fishing/rod/heavy.png"},
+   reel:{standard:"assets/fishing/reel/standard.png",stable:"assets/fishing/reel/stable.png",fast:"assets/fishing/reel/fast.png",heavy:"assets/fishing/reel/heavy.png"},
+   line:{standard:"assets/fishing/line/standard.png",stable:"assets/fishing/line/stable.png",fast:"assets/fishing/line/fast.png",heavy:"assets/fishing/line/heavy.png"},
+   hook:{standard:"assets/fishing/hook/standard.png",magnet:"assets/fishing/hook/magnet.png",recovery:"assets/fishing/hook/recovery.png",military:"assets/fishing/hook/military.png",probe:"assets/fishing/hook/probe.png"}
+ }
+};
+const enemyVisualAssets={
+ ships:{
+   1:"assets/enemy/ships/ship_mk1.png",
+   2:"assets/enemy/ships/ship_mk2.png",
+   3:"assets/enemy/ships/ship_mk3.png",
+   4:"assets/enemy/ships/ship_mk4.png"
+ },
+ weapons:{
+   pulse:"assets/enemy/weapons/w_pulse.png",
+   bolt:"assets/enemy/weapons/w_twin.png",
+   laser:"assets/enemy/weapons/w_laser.png",
+   missile:"assets/enemy/weapons/w_missile.png",
+   emp:"assets/enemy/weapons/w_emp.png",
+   barrier:"assets/enemy/weapons/w_barrier.png",
+   scatter:"assets/enemy/weapons/w_scatter.png",
+   piercer:"assets/enemy/weapons/w_piercer.png"
+ },
+ equipments:{
+   armorplate:"assets/enemy/equipment/e_armor.png",
+   shield:"assets/enemy/equipment/e_shield.png",
+   repair:"assets/enemy/equipment/e_repair.png",
+   aim:"assets/enemy/equipment/e_aim.png",
+   cooler:"assets/enemy/equipment/e_cooler.png",
+   bulk:"assets/enemy/equipment/e_cargo.png",
+   sensor:"assets/enemy/equipment/e_sensor.png",
+   stabilizer:"assets/enemy/equipment/e_salvage.png"
  }
 };
 function visualImg(src,alt="",cls="assetSprite"){
@@ -108,6 +142,16 @@ function visualImg(src,alt="",cls="assetSprite"){
 function hullAsset(){
  const mk=Math.max(1,Math.min(4,run?.shipLevel||1));
  return visualAssets.ships[mk];
+}
+const fishingVisualKey={
+ rod:{"標準":"standard","安定":"stable","高速":"fast","重量":"heavy"},
+ reel:{"標準":"standard","安定":"stable","高速":"fast","重量":"heavy"},
+ line:{"標準":"standard","安定":"stable","高速":"fast","重量":"heavy"},
+ hook:{standard:"standard",magnet:"magnet",recovery:"recovery",military:"military",probe:"probe"}
+};
+function fishingAsset(type,id){
+ const key=(fishingVisualKey[type]||{})[id]||id;
+ return visualAssets.fishing?.[type]?.[key]||null;
 }
 function shipStageInfo(level){
  const lv=Math.max(1,Math.floor(level||1));
@@ -212,19 +256,30 @@ function normalizeResumeState(){
  if(run.pendingSignal && !run.pendingCatch) run.pendingSignal=null;
  if(run.mode==="warning" && !run.enemy){run.mode="fishing";run.nextPirate=run.distance+rand(.4,1.2);}
  if(run.mode==="fishing" && run.pendingCatch){run.mode="fishingMini";}
+ if(run.enemy && (!run.enemy.parts?.leftWeapon || !run.enemy.parts?.rightWeapon || !run.enemy.parts?.equipment || !run.enemy.parts?.laser)){
+   const keepEnemy=["battle","salvage"].includes(run.mode);
+   createEnemy();
+   if(!keepEnemy) run.enemy=null;
+ }
 }
 function setGameNavLocked(locked){
  const nav=$("#gameNav");nav.classList.toggle("locked",!!locked);
  $$("#gameNav button").forEach(b=>b.disabled=!!locked);
 }
 function lootIconFor(kind){
- if(kind.type==="material")return {metal:"▰",circuit:"▦",mech:"⚙",cell:"◆"}[kind.mat]||"◇";
- if(kind.type==="weapon")return "▰━";
- return "⬡";
+ if(kind.type==="material"){
+  const src=visualAssets.materials[kind.mat];
+  return src ? visualImg(src, kind.mat, "lootIconAsset") : ({metal:"▰",circuit:"▦",mech:"⚙",cell:"◆"}[kind.mat]||"◇");
+ }
+ if(kind.type==="weapon" || kind.type==="equip"){
+  const src=kind.type==="weapon" ? visualAssets.weapons[kind.id] : visualAssets.equipments[kind.id];
+  return src ? visualImg(src, kind.id, "lootIconAsset") : (kind.type==="weapon" ? "▰━" : "⬡");
+ }
+ return "◇";
 }
 function showLootReveal(kind,amount,isNew,detail,onDone){
  const overlay=$("#lootReveal");
- $("#lootIcon").textContent=lootIconFor(kind);
+ $("#lootIcon").innerHTML=lootIconFor(kind);
  $("#lootName").textContent=kind.type==="material"?`${matName(kind.mat)} ×${amount}`:itemName(kind);
  $("#lootKind").textContent=kind.type==="material"?"MATERIAL":kind.type==="weapon"?"WEAPON":"EQUIPMENT";
  $("#lootDetail").textContent=detail||"";
@@ -526,125 +581,260 @@ function triggerPirate(){
    createEnemy();startBattle();
  },1800);
 }
+function enemyDamageScale(distance){
+ const d=Math.max(0,distance||0);
+ return Math.min(1,0.28+0.72*(1-Math.exp(-d/55)));
+}
+function enemyWeaponLevel(distance){
+ const d=Math.max(0,distance||0);
+ const base=1+d/9+Math.max(0,d-70)/18+Math.max(0,d-150)/12;
+ return Math.max(1,Math.round(base+rand(-.8,.8)));
+}
+function enemyEquipLevel(distance){
+ const d=Math.max(0,distance||0);
+ const base=1+d/12+Math.max(0,d-100)/25;
+ return Math.max(1,Math.round(base+rand(-.7,.7)));
+}
+function enemyShipLevel(distance){
+ const d=Math.max(0,distance||0);
+ return Math.max(1,1+Math.floor((d+rand(-3,3))/16));
+}
+function enemyHpMultiplier(distance){
+ const d=Math.max(0,distance||0);
+ return 2.2+0.018*d+0.00018*d*d;
+}
+function enemyLaserRatio(distance){ return Math.min(.60,.22+Math.max(0,distance||0)*.003); }
+function enemyLaserInterval(distance){ return Math.max(7,12-Math.max(0,distance||0)/25); }
+function enemyWeaponPool(distance){
+ const d=Math.max(0,distance||0),ids=["pulse","bolt","laser"];
+ if(d>=12)ids.push("missile","scatter");
+ if(d>=28)ids.push("emp","barrier");
+ if(d>=40)ids.push("piercer");
+ return ids;
+}
+function enemyEquipPool(distance){
+ const d=Math.max(0,distance||0),ids=["armorplate","shield","repair"];
+ if(d>=15)ids.push("aim","cooler");
+ if(d>=30)ids.push("bulk","sensor");
+ if(d>=45)ids.push("stabilizer");
+ return ids;
+}
+function chooseWithCap(pool,counts,cap=2){
+ let choices=pool.filter(id=>(counts[id]||0)<cap);if(!choices.length)choices=pool;
+ const id=choices[randi(0,choices.length-1)];counts[id]=(counts[id]||0)+1;return id;
+}
+function enemyEquipmentMods(enemy,active=true){
+ let shield=0,repair=0,atkMult=0,fireRate=0,partBonus=0;
+ if(!active)return {shield,repair,atkMult,fireRate,partBonus};
+ for(const inst of enemy.equipmentLoadout||[]){
+  const def=equipments.find(x=>x.id===inst.id);if(!def)continue;const mult=equipLevelMult(inst);
+  shield+=(def.shield||0)*mult;repair+=(def.repair||0)*mult;atkMult+=(def.atkMult||0)*mult;fireRate+=(def.fireRate||0)*mult;partBonus+=(def.partBonus||0)*mult;
+ }
+ return {shield,repair,atkMult,fireRate,partBonus};
+}
 function createEnemy(){
- const d=run.distance;
- const tier=Math.floor(d/8);
- const hp=80*Math.pow(1.115,d)+tier*45;
- const atk=5*Math.pow(1.09,d)+tier*2;
- run.enemy={name:tier<2?"SCRAP RAIDER":tier<5?"VOID CORSAIR":"ABYSS MARAUDER",maxHp:hp,hp,atk,
-  parts:{
-    weapon:{name:"主砲",hp:hp*.24,max:hp*.24,destroyed:false,disabledUntil:0},
-    engine:{name:"推進器",hp:hp*.20,max:hp*.20,destroyed:false,disabledUntil:0},
-    shield:{name:"シールド",hp:hp*.18,max:hp*.18,destroyed:false,disabledUntil:0}
-  },target:"core",nextBig:rand(5.5,9),attackClock:0
- };
+ const d=Math.max(0,run.distance||0),shipLevel=enemyShipLevel(d),stage=shipStageInfo(shipLevel);
+ const wlv=enemyWeaponLevel(d),elv=enemyEquipLevel(d),weaponPool=enemyWeaponPool(d),equipPool=enemyEquipPool(d),counts={};
+ const weaponLoadout=[],layout=shipLayoutForLevel(stage.mk);
+ for(let i=0;i<stage.weaponSlots;i++){
+  const id=chooseWithCap(weaponPool,counts,2);let side=layout.weapons[i]?.side;
+  if(side==="center")side=Math.random()<.5?"left":"right";if(side!=="left"&&side!=="right")side=i%2?"right":"left";
+  weaponLoadout.push({id,lvl:Math.max(1,wlv+randi(-1,1)),side});
+ }
+ const equipmentLoadout=[];
+ for(let i=0;i<stage.equipSlots;i++)equipmentLoadout.push({id:equipPool[randi(0,equipPool.length-1)],lvl:Math.max(1,elv+randi(-1,1))});
+ let hpBonus=0;
+ for(const inst of equipmentLoadout){const def=equipments.find(x=>x.id===inst.id);if(def?.hp)hpBonus+=def.hp*equipLevelMult(inst)}
+ const baseHp=100+(shipLevel-1)*55+hpBonus,hp=Math.round(baseHp*enemyHpMultiplier(d)),tier=Math.floor(d/25);
+ run.enemy={name:tier<1?"SCRAP RAIDER":tier<3?"VOID CORSAIR":tier<6?"ABYSS MARAUDER":"DEEP-SPACE REAVER",
+  shipLevel,visualMk:stage.mk,weaponLevel:wlv,equipLevel:elv,weaponLoadout,equipmentLoadout,maxHp:hp,hp,damageScale:enemyDamageScale(d),
+  laserDamageRatio:enemyLaserRatio(d),laserInterval:enemyLaserInterval(d),
+  parts:{leftWeapon:{name:"左武器",hp:hp*.18,max:hp*.18,destroyed:false,disabledUntil:0},rightWeapon:{name:"右武器",hp:hp*.18,max:hp*.18,destroyed:false,disabledUntil:0},equipment:{name:"装備",hp:hp*.22,max:hp*.22,destroyed:false,disabledUntil:0},laser:{name:"レーザー",hp:hp*.16,max:hp*.16,destroyed:false,disabledUntil:0}},
+  target:"core",nextBig:rand(enemyLaserInterval(d)*.75,enemyLaserInterval(d)*1.1),attackClock:0,distanceBorn:d};
  saveRun();
 }
 function switchMode(m){
- $$(".modeLayer").forEach(x=>x.classList.remove("active"));
- $("#battleActions").classList.remove("active");
- if(m==="battle"){ $("#battleScene").classList.add("active");$("#battleActions").classList.add("active")}
- else if(m==="salvage"){ $("#salvageScene").classList.add("active")}
- else $("#fishingScene").classList.add("active");
+ $$(".modeLayer").forEach(x=>x.classList.remove("active"));$("#battleActions").classList.remove("active");
+ if(m==="battle"){$("#battleScene").classList.add("active");$("#battleActions").classList.add("active")}
+ else if(m==="salvage")$("#salvageScene").classList.add("active");else $("#fishingScene").classList.add("active");
+}
+function battleShipComposite(shipLevel,weaponLoadout,equipmentLoadout,enemy=false){
+ const mk=Math.max(1,Math.min(4,shipLevel||1)),layout=shipLayoutForLevel(mk),assetSet=enemy?enemyVisualAssets:visualAssets;
+ let out=`<div class="battleShipComposite ${enemy?"enemyComposite":"playerComposite"}">${visualImg(assetSet.ships[mk],"","battleHullSprite")}`;
+ (equipmentLoadout||[]).forEach((inst,i)=>{const pos=layout.equips[i],src=assetSet.equipments[inst.id]||visualAssets.equipments[inst.id];if(pos&&src){const x=pos.x,y=enemy?100-pos.y:pos.y;out+=`<img class="battleOverlay battleEquip equip-slot-${i+1}" data-part-group="equipment" data-slot="${i+1}" src="${src}" style="left:${x}%;top:${y}%;width:${pos.w}%;height:${pos.h}%" alt="">`}});
+ (weaponLoadout||[]).forEach((inst,i)=>{const pos=layout.weapons[i],src=assetSet.weapons[inst.id]||visualAssets.weapons[inst.id];if(pos&&src){const x=pos.x,y=enemy?100-pos.y:pos.y;const group=(inst.side||pos.side||"left")==="right"?"rightWeapon":"leftWeapon";out+=`<img class="battleOverlay battleWeapon weapon-slot-${i+1}" data-part-group="${group}" data-slot="${i+1}" data-weapon-id="${inst.id}" src="${src}" style="left:${x}%;top:${y}%;width:${pos.w}%;height:${pos.h}%" alt="">`}});
+ if(enemy)out+=`<div class="enemyLaserTurret" data-part-group="laser"><i></i><i></i><span></span></div>`;return out+`</div>`;
+}
+function renderBattleShips(){
+ const e=run.enemy;if(!e)return;
+ if($("#enemyShipVisual"))$("#enemyShipVisual").innerHTML=battleShipComposite(e.visualMk||e.shipLevel,e.weaponLoadout,e.equipmentLoadout,true);
+ if($("#playerShipVisual"))$("#playerShipVisual").innerHTML=battleShipComposite(Math.min(4,run.shipLevel),run.weapons,run.equipments,false);
+ ensureBattleFxLayer();
+}
+function ensureBattleFxLayer(){
+ const scene=$("#battleScene");
+ if(!scene)return null;
+ let layer=$("#battleFxLayer");
+ if(!layer){
+  layer=document.createElement("div");
+  layer.id="battleFxLayer";
+  layer.className="battleFxLayer";
+  scene.appendChild(layer);
+ }
+ return layer;
+}
+function fxRectCenter(el){
+ const layer=ensureBattleFxLayer();
+ if(!layer||!el)return {x:0,y:0};
+ const lr=layer.getBoundingClientRect(),r=el.getBoundingClientRect();
+ return {x:r.left+r.width/2-lr.left,y:r.top+r.height/2-lr.top};
+}
+function spawnFx(className,styles={},life=260,parent){
+ const layer=parent||ensureBattleFxLayer();
+ if(!layer)return null;
+ const el=document.createElement("div");
+ el.className=className;
+ Object.assign(el.style,styles||{});
+ layer.appendChild(el);
+ if(life>0)setTimeout(()=>el.remove(),life);
+ return el;
+}
+function battleTargetElement(target){
+ if(target==="core")return $("#enemyShip [data-part='core']");
+ return $("#enemyShip [data-part='"+target+"']");
+}
+function flashImpact(targetEl,color="255,180,90",big=false){
+ if(!targetEl)return;
+ const c=fxRectCenter(targetEl),s=big?74:46;
+ spawnFx("battleImpact"+(big?" big":""),{left:(c.x-s/2)+"px",top:(c.y-s/2)+"px",'--impact-color':`rgba(${color},1)`},big?420:300);
+ targetEl.classList.add("hit");
+ setTimeout(()=>targetEl&&targetEl.classList.remove("hit"),140);
+}
+function flashShipHit(selector,enemy=false){
+ const el=typeof selector==="string"?$(selector):selector;
+ if(!el)return;
+ el.classList.add(enemy?"takingHitEnemy":"takingHit");
+ setTimeout(()=>el&&el.classList.remove(enemy?"takingHitEnemy":"takingHit"),160);
+}
+function fireBeam(fromEl,toEl,opts={}){
+ const layer=ensureBattleFxLayer();
+ if(!layer||!fromEl||!toEl)return;
+ const a=fxRectCenter(fromEl),b=fxRectCenter(toEl),dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy),ang=Math.atan2(dy,dx)*180/Math.PI;
+ const cls=`battleBeam ${opts.kind||""} ${opts.enemy?"enemy":"player"}`.trim();
+ const beam=spawnFx(cls,{left:a.x+"px",top:a.y+"px",width:len+"px",transform:`translateY(-50%) rotate(${ang}deg)`, '--beam-color':opts.color||"rgba(100,240,255,.95)", '--beam-glow':opts.glow||opts.color||"rgba(100,240,255,.55)", '--beam-width':(opts.width||4)+"px"},opts.life||190,layer);
+ if(fromEl.classList){fromEl.classList.add("firing");setTimeout(()=>fromEl&&fromEl.classList.remove("firing"),130);} 
+ if(opts.impact!==false)setTimeout(()=>flashImpact(toEl, opts.enemy?"255,120,104":"122,248,255", !!opts.big), 70);
+}
+function activeOverlays(rootSelector, partGroup){
+ return Array.from($$(rootSelector+` [data-part-group='${partGroup}']`)).filter(el=>!el.classList.contains('disabled'));
+}
+function firePlayerVolley(target){
+ const targetEl=battleTargetElement(target||run?.enemy?.target||"core");
+ if(!targetEl)return;
+ Array.from($$("#playerShipVisual .battleWeapon")).forEach(el=>fireBeam(el,targetEl,{color:"rgba(110,243,255,.96)",glow:"rgba(110,243,255,.62)",width:4,enemy:false,kind:"pulse"}));
+ flashShipHit("#enemyShipVisual",true);
+}
+function fireEnemyVolley(){
+ const targetEl=$("#playerShipVisual");
+ if(!targetEl)return;
+ Array.from($$("#enemyShipVisual .battleWeapon")).filter(el=>!el.classList.contains('disabled')).forEach(el=>fireBeam(el,targetEl,{color:"rgba(255,112,96,.94)",glow:"rgba(255,112,96,.58)",width:4,enemy:true,kind:"pulse",impact:false}));
+ setTimeout(()=>flashShipHit("#playerShipVisual",false),75);
+}
+function enemyLaserCharge(on=true){
+ const t=$("#enemyShipVisual .enemyLaserTurret");
+ if(!t)return;
+ t.classList.toggle("charging",!!on);
+}
+function fireEnemyLaser(deflected=false,partial=false){
+ const turret=$("#enemyShipVisual .enemyLaserTurret"),target=$("#playerShipVisual");
+ if(!turret||!target)return;
+ fireBeam(turret,target,{color:deflected?"rgba(194,132,255,.98)":"rgba(255,72,92,.98)",glow:deflected?"rgba(190,126,255,.58)":"rgba(255,72,92,.65)",width:deflected?8:10,enemy:true,kind:deflected?"barrier":"laser",life:280,big:true,impact:!deflected});
+ if(deflected)flashPlayerBarrier();
+ else if(partial)setTimeout(()=>flashShipHit(target,false),75);
+}
+function emitBreakFx(partKey){
+ const target=partKey==="laser"?$("#enemyShipVisual .enemyLaserTurret"):battleTargetElement(partKey);
+ if(target){
+  const c=fxRectCenter(target),s=92;
+  spawnFx("battleExplosion",{left:(c.x-s/2)+"px",top:(c.y-s/2)+"px"},480);
+ }
 }
 function startBattle(){
- setGameNavLocked(true);
- run.mode="battle";switchMode("battle");renderEnemy();renderBattleActions();clearInterval(battleTimer);battleTimer=setInterval(battleTick,180);saveRun();
+ setGameNavLocked(true);run.mode="battle";switchMode("battle");renderBattleShips();renderEnemy();renderBattleActions();clearInterval(battleTimer);battleTimer=setInterval(battleTick,180);saveRun();
 }
-function totalAttack(){
- let atk=run.weapons.reduce((s,i)=>s+(weapons.find(x=>x.id===i.id)?.atk||0),0);
- atk*=1+0.06*Math.sqrt(meta.upgrades.fire||0)+(run.mods?.atkMult||0);
- return atk;
+function totalAttack(){return playerAtk()}
+function enemyActiveMods(e){const p=e.parts.equipment,active=!p.destroyed&&(p.disabledUntil||0)<=Date.now();return enemyEquipmentMods(e,active)}
+function enemyWeaponAttackPower(e){
+ const now=Date.now();let total=0;
+ for(const inst of e.weaponLoadout||[]){const part=inst.side==="right"?e.parts.rightWeapon:e.parts.leftWeapon;if(part.destroyed||(part.disabledUntil||0)>now)continue;const def=weapons.find(x=>x.id===inst.id);if(def)total+=(def.atk||0)*weaponLevelMult(inst)}
+ const mods=enemyActiveMods(e);return total*(1+(mods.atkMult||0))*e.damageScale;
+}
+function hitEnemy(dmg,target){
+ const e=run.enemy;if(!e)return;let actual=Math.max(0,dmg),mods=enemyActiveMods(e);actual*=1-Math.min(.65,mods.shield||0);
+ target=target||e.target||"core";
+ const targetEl=battleTargetElement(target||"core");
+ if(target!=="core"&&e.parts[target]&&!e.parts[target].destroyed){
+  e.parts[target].hp-=actual;
+  flashImpact(targetEl,"122,248,255",false);
+  if(e.parts[target].hp<=0){e.parts[target].hp=0;e.parts[target].destroyed=true;emitBreakFx(target);if(e.target===target)e.target="core";toast(`${e.parts[target].name} 破壊`)}}
+ else{flashImpact(targetEl,"122,248,255",false);} 
+ e.hp-=actual;
 }
 function battleTick(){
- if(!run||run.mode!=="battle"||!run.enemy)return;
- const e=run.enemy,dt=.18;
- e.attackClock+=dt;e.nextBig-=dt;
+ if(!run||run.mode!=="battle"||!run.enemy)return;const e=run.enemy,dt=.18;e.attackClock+=dt;e.nextBig-=dt;
  const fr=Math.max(.55,1-(run.mods?.fireRate||0));
  if(e.attackClock>=fr){
-   e.attackClock=0;
-   let dmg=totalAttack()*rand(.80,1.15);
-   if(e.target!=="core" && e.parts[e.target] && !e.parts[e.target].destroyed){
-     dmg*=1+(run.mods?.partBonus||0)+((e.target==="weapon" && run.weapons.some(i=>i.id==="laser")) ? 0.15 : 0);
-     e.parts[e.target].hp-=dmg;
-     if(e.parts[e.target].hp<=0){e.parts[e.target].destroyed=true;toast(`${e.parts[e.target].name} 破壊`)}
-   }
-   e.hp-=dmg;
+  e.attackClock=0;
+  let dmg=totalAttack()*rand(.80,1.15);
+  if(e.target!=="core"&&e.parts[e.target]&&!e.parts[e.target].destroyed)dmg*=1+(run.mods?.partBonus||0)+(run.weapons.some(i=>i.id==="laser")?.15:0);
+  firePlayerVolley(e.target);
+  hitEnemy(dmg,e.target);
  }
- const enemyAttackMult=e.parts.weapon.destroyed?.55:1;
- if(Math.random()<.22){
-   takeDamage(e.atk*enemyAttackMult*rand(.45,.7));
- }
- if(e.nextBig<=0 && !e.parts.weapon.destroyed){e.nextBig=rand(6.5,10);startQTE()}
- if(e.hp<=0){winBattle();return}
- renderEnemy();
+ const emods=enemyActiveMods(e),efr=Math.max(.55,1-(emods.fireRate||0));e._enemyFireClock=(e._enemyFireClock||0)+dt;
+ if(e._enemyFireClock>=efr){e._enemyFireClock=0;const enemyDmg=enemyWeaponAttackPower(e)*rand(.82,1.12);if(enemyDmg>0){fireEnemyVolley();takeDamage(enemyDmg)}}
+ if(!e.parts.equipment.destroyed&&(e.parts.equipment.disabledUntil||0)<=Date.now()&&emods.repair>0)e.hp=Math.min(e.maxHp,e.hp+e.maxHp*emods.repair*.012*dt);
+ const laser=e.parts.laser;if(e.nextBig<=0&&!laser.destroyed&&(laser.disabledUntil||0)<=Date.now()){e.nextBig=rand(e.laserInterval*.85,e.laserInterval*1.15);startQTE()}
+ if(e.hp<=0){winBattle();return}renderEnemy();
 }
-function damageReduction(){
- const armor=Math.min(.18,.022*Math.sqrt(meta.upgrades.armor||0));
- return clamp(armor+(run.mods?.shield||0)+(run._barrierUntil>Date.now()?.55:0),0,.8);
-}
-function takeDamage(v){
- run.hp-=v*(1-damageReduction());if(meta.settings.shake)$("#gameViewport").animate([{transform:"translateX(-4px)"},{transform:"translateX(4px)"},{transform:"none"}],{duration:120});
- if(run.hp<=0){run.hp=0;endRun()}updateHUD()
-}
+function damageReduction(){const armor=Math.min(.18,.022*Math.sqrt(meta.upgrades.armor||0));return clamp(armor+(run.mods?.shield||0)+(run._barrierUntil>Date.now()?.55:0),0,.8)}
+function takeDamage(v){run.hp-=v*(1-damageReduction());flashShipHit("#playerShipVisual",false);if(meta.settings.shake)$("#gameViewport").animate([{transform:"translateX(-4px)"},{transform:"translateX(4px)"},{transform:"none"}],{duration:120});if(run.hp<=0){run.hp=0;endRun()}updateHUD()}
 function renderEnemy(){
- const e=run.enemy;if(!e)return;
- $("#enemyName").textContent=e.name;$("#enemyHpFill").style.width=`${clamp(e.hp/e.maxHp*100,0,100)}%`;
- $$(".enemyPart").forEach(b=>{const p=b.dataset.part;if(p==="core"){b.classList.toggle("targeted",e.target==="core");return}const part=e.parts[p];b.classList.toggle("destroyed",part.destroyed);b.classList.toggle("targeted",e.target===p)});
+ const e=run.enemy;if(!e)return;$("#enemyName").textContent=`${e.name}  Mk.${e.visualMk||Math.min(4,e.shipLevel)} / Hull Lv.${e.shipLevel}`;$("#enemyHpFill").style.width=`${clamp(e.hp/e.maxHp*100,0,100)}%`;
+ if($("#enemyStatsLine"))$("#enemyStatsLine").textContent=`WPN Lv.${e.weaponLevel}  EQ Lv.${e.equipLevel}  DMG ×${e.damageScale.toFixed(2)}`;
+ $$("#enemyShip [data-part]").forEach(b=>{const p=b.dataset.part;if(p==="core"){b.classList.toggle("targeted",e.target==="core");return}const part=e.parts[p];b.classList.toggle("destroyed",part.destroyed);b.classList.toggle("targeted",e.target===p);b.disabled=part.destroyed});
+ ["leftWeapon","rightWeapon","equipment"].forEach(group=>{$$("#enemyShipVisual [data-part-group='"+group+"']").forEach(el=>el.classList.toggle("disabled",e.parts[group].destroyed || (e.parts[group].disabledUntil||0)>Date.now()))});
+ const laserEl=$("#enemyShipVisual .enemyLaserTurret");
+ if(laserEl)laserEl.classList.toggle("disabled",e.parts.laser.destroyed || (e.parts.laser.disabledUntil||0)>Date.now());
  $("#targetLabel").textContent=`PRIORITY: ${e.target==="core"?"HULL":e.parts[e.target]?.name||"HULL"}`;
 }
 function renderBattleActions(){
- const box=$("#battleActions");box.innerHTML="";if(!run)return;
- const activeWeapons=run.weapons.map(i=>weapons.find(x=>x.id===i.id)).filter(x=>x?.active).slice(0,4);
- activeWeapons.forEach(w=>{const b=document.createElement("button");let left=Math.max(0,(run.actionCooldowns[w.id]||0)-Date.now());b.textContent=left>0?`${w.active.name}\n${Math.ceil(left/1000)}s`:w.active.name;b.disabled=left>0;b.onclick=()=>useActive(w);box.appendChild(b)});
+ const box=$("#battleActions");box.innerHTML="";if(!run)return;const activeWeapons=run.weapons.map(i=>({inst:i,def:weapons.find(x=>x.id===i.id)})).filter(x=>x.def?.active).slice(0,4);
+ activeWeapons.forEach(({inst,def:w})=>{const b=document.createElement("button");let left=Math.max(0,(run.actionCooldowns[w.id]||0)-Date.now());b.textContent=left>0?`${w.active.name}\n${Math.ceil(left/1000)}s`:w.active.name;b.disabled=left>0;b.onclick=()=>useActive(w,inst);box.appendChild(b)});
  while(box.children.length<4){const b=document.createElement("button");b.textContent="—";b.disabled=true;box.appendChild(b)}
 }
-function useActive(w){
- const a=w.active;if((run.actionCooldowns[w.id]||0)>Date.now())return;
- run.actionCooldowns[w.id]=Date.now()+a.cool*1000;
- if(a.type==="damage"){let d=a.power*(1+0.06*Math.sqrt(meta.upgrades.fire||0));run.enemy.hp-=d;if(run.enemy.target!=="core"&&run.enemy.parts[run.enemy.target]&&!run.enemy.parts[run.enemy.target].destroyed)run.enemy.parts[run.enemy.target].hp-=d*.65;toast(`${a.name}!`)}
- if(a.type==="emp"){const p=run.enemy.target;if(p!=="core"&&run.enemy.parts[p]&&!run.enemy.parts[p].destroyed){run.enemy.parts[p].disabledUntil=Date.now()+4500;run.enemy.nextBig+=3;toast("対象部位を一時停止")}}
- if(a.type==="barrier"){run._barrierUntil=Date.now()+3200;toast("防壁展開")}
+function useActive(w,inst){
+ const a=w.active;if((run.actionCooldowns[w.id]||0)>Date.now())return;run.actionCooldowns[w.id]=Date.now()+a.cool*1000;
+ const activeEls=Array.from($$("#playerShipVisual .battleWeapon")).filter(el=>el.dataset.weaponId===inst.id);
+ activeEls.forEach(el=>{el.classList.add("activePulse");setTimeout(()=>el&&el.classList.remove("activePulse"),340);});
+ if(a.type==="damage"){let d=a.power*weaponLevelMult(inst)*(1+0.06*Math.sqrt(meta.upgrades.fire||0));activeEls.forEach(el=>fireBeam(el,battleTargetElement(run.enemy.target),{color:"rgba(122,248,255,.98)",glow:"rgba(122,248,255,.70)",width:7,life:240,big:true}));hitEnemy(d,run.enemy.target);toast(`${a.name}!`)}
+ if(a.type==="emp"){const p=run.enemy.target;if(p!=="core"&&run.enemy.parts[p]&&!run.enemy.parts[p].destroyed){run.enemy.parts[p].disabledUntil=Date.now()+4500;run.enemy.nextBig+=3;const t=battleTargetElement(p);if(t){const c=fxRectCenter(t),s=86;spawnFx("empBurst",{left:(c.x-s/2)+"px",top:(c.y-s/2)+"px"},520);}toast("対象部位を一時停止")}}
+ if(a.type==="barrier"){run._barrierUntil=Date.now()+3200;flashPlayerBarrier();toast("防壁展開")}
  renderBattleActions();setTimeout(renderBattleActions,a.cool*1000+20)
 }
+function flashPlayerBarrier(){const el=$("#playerBarrier");if(!el)return;el.classList.add("active");setTimeout(()=>el.classList.remove("active"),520)}
 function startQTE(){
- if($("#qteOverlay").classList.contains("active"))return;
- $("#qteOverlay").classList.add("active");let start=performance.now(),dur=Math.max(650,1500-run.distance*8),done=false;
- cancelAnimationFrame(qteAnim);
- function q(t){
-   let p=clamp((t-start)/dur,0,1),size=220-(220-82)*p;$("#qteRing").style.width=size+"px";$("#qteRing").style.height=size+"px";
-   if(p>=1){if(!done){done=true;$("#qteOverlay").classList.remove("active");takeDamage(run.enemy.atk*4.2);toast("大技直撃!")}return}
-   qteAnim=requestAnimationFrame(q)
- } qteAnim=requestAnimationFrame(q);
- $("#qteBtn").onclick=()=>{
-   if(done)return;done=true;cancelAnimationFrame(qteAnim);let ring=parseFloat(getComputedStyle($("#qteRing")).width),diff=Math.abs(ring-82);
-   $("#qteOverlay").classList.remove("active");
-   const leniency=22+(run.mods?.qte||0)*100;
-   if(diff<leniency){toast("PERFECT DODGE")}
-   else if(diff<leniency*2.4){takeDamage(run.enemy.atk*.9);toast("DODGE")}
-   else{takeDamage(run.enemy.atk*2.6);toast("回避失敗")}
- };
+ if($("#qteOverlay").classList.contains("active"))return;$("#qteOverlay").classList.add("active");$("#qteOverlay").classList.add("warning");enemyLaserCharge(true);let start=performance.now(),dur=Math.max(900,1500-Math.min(600,run.distance*5)),done=false;cancelAnimationFrame(qteAnim);
+ const turret=$("#enemyShipVisual .enemyLaserTurret"),player=$("#playerShipVisual");
+ if(turret&&player)fireBeam(turret,player,{color:"rgba(255,92,108,.45)",glow:"rgba(255,92,108,.28)",width:3,life:Math.round(dur),impact:false,enemy:true,kind:"warning"});
+ function closeQTE(){enemyLaserCharge(false);$("#qteOverlay").classList.remove("active");$("#qteOverlay").classList.remove("warning");}
+ function q(t){let p=clamp((t-start)/dur,0,1),size=220-(220-82)*p;$("#qteRing").style.width=size+"px";$("#qteRing").style.height=size+"px";if(p>=1){if(!done){done=true;closeQTE();fireEnemyLaser(false,false);takeDamage(run.maxHp*run.enemy.laserDamageRatio);toast("レーザー直撃!")}return}qteAnim=requestAnimationFrame(q)}qteAnim=requestAnimationFrame(q);
+ $("#qteBtn").onclick=()=>{if(done)return;done=true;cancelAnimationFrame(qteAnim);let ring=parseFloat(getComputedStyle($("#qteRing")).width),diff=Math.abs(ring-82);closeQTE();const leniency=22+(run.mods?.qte||0)*100;if(diff<leniency){fireEnemyLaser(true,false);flashPlayerBarrier();toast("PERFECT GUARD")}else if(diff<leniency*2.4){fireEnemyLaser(true,true);flashPlayerBarrier();takeDamage(run.maxHp*run.enemy.laserDamageRatio*.18);toast("GUARD")}else{fireEnemyLaser(false,true);takeDamage(run.maxHp*run.enemy.laserDamageRatio*.72);toast("防御失敗")}};
 }
-function winBattle(){
- clearInterval(battleTimer);run.kills++;meta.totalKills++;
- const tokenBase=Math.max(1,Math.floor(2+run.distance*.28));const tokenGain=Math.max(1,Math.round(tokenBase*rand(.85,1.15)));
- run.tokensEarned+=tokenGain;meta.tokens+=tokenGain;
- const repair=(0.025+0.012*Math.sqrt(meta.upgrades.repair||0)+(run.mods?.repair||0))*run.maxHp;
- run.hp=Math.min(run.maxHp,run.hp+repair);
- run.mode="salvage";saveMeta();saveRun();showSalvage();toast(`海賊撃破 ◈ +${tokenGain}`);
-}
-function showSalvage(){
- switchMode("salvage");const box=$("#salvageParts");box.innerHTML="";
- Object.entries(run.enemy.parts).filter(([k,p])=>!p.destroyed).forEach(([k,p])=>{const b=document.createElement("button");b.textContent=p.name;b.onclick=()=>selectSalvage(k);box.appendChild(b)});
- if(!box.children.length){const b=document.createElement("button");b.textContent="船体残骸";b.onclick=()=>selectSalvage("core");box.appendChild(b)}
-}
+function winBattle(){clearInterval(battleTimer);run.kills++;meta.totalKills++;const tokenBase=Math.max(1,Math.floor(2+run.distance*.28)),tokenGain=Math.max(1,Math.round(tokenBase*rand(.85,1.15)));run.tokensEarned+=tokenGain;meta.tokens+=tokenGain;const repair=(0.025+0.012*Math.sqrt(meta.upgrades.repair||0)+(run.mods?.repair||0))*run.maxHp;run.hp=Math.min(run.maxHp,run.hp+repair);run.mode="salvage";saveMeta();saveRun();showSalvage();toast(`海賊撃破 ◈ +${tokenGain}`)}
+function showSalvage(){switchMode("salvage");const box=$("#salvageParts");box.innerHTML="";Object.entries(run.enemy.parts).filter(([k,p])=>!p.destroyed).forEach(([k,p])=>{const b=document.createElement("button");b.textContent=p.name;b.onclick=()=>selectSalvage(k);box.appendChild(b)});const core=document.createElement("button");core.textContent="本体";core.onclick=()=>selectSalvage("core");box.appendChild(core)}
 function selectSalvage(part){
- const pool=part==="weapon"?["weapon","weapon","equip","material"]:part==="engine"?["material","material","equip","weapon"]:part==="shield"?["equip","equip","material","weapon"]:["material","weapon","equip"];
- const type=pool[randi(0,pool.length-1)];
- let kind;if(type==="weapon")kind={type:"weapon",id:weapons[randi(0,weapons.length-1)].id};
- else if(type==="equip")kind={type:"equip",id:equipments[randi(0,equipments.length-1)].id};
- else kind={type:"material",mat:["metal","circuit","mech","cell"][randi(0,3)]};
- run.pendingSalvage={part,kind,amount:randi(2,4)};saveRun();startFishing(true);
+ let pool;if(part==="leftWeapon"||part==="rightWeapon")pool=["weapon","weapon","weapon","equip","material"];else if(part==="equipment")pool=["equip","equip","equip","material","weapon"];else if(part==="laser")pool=["weapon","weapon","material","material","equip"];else pool=["material","material","weapon","equip"];
+ const type=pool[randi(0,pool.length-1)];let kind;if(type==="weapon"){if(part==="laser"&&Math.random()<.55)kind={type:"weapon",id:Math.random()<.55?"laser":"piercer"};else kind={type:"weapon",id:weapons[randi(0,weapons.length-1)].id}}else if(type==="equip")kind={type:"equip",id:equipments[randi(0,equipments.length-1)].id};else kind={type:"material",mat:["metal","circuit","mech","cell"][randi(0,3)]};run.pendingSalvage={part,kind,amount:randi(2,4)};saveRun();startFishing(true)
 }
 function finishSalvage(success){
  if(success&&run.pendingSalvage){
@@ -793,7 +983,7 @@ function materialIcon(mat){
  return src?visualImg(src,mat,"materialSprite"):"◇";
 }
 function itemIconHTML(type,id){
- const src=type==="weapon"?visualAssets.weapons[id]:type==="equip"?visualAssets.equipments[id]:null;
+ const src=type==="weapon"?visualAssets.weapons[id]:type==="equip"?visualAssets.equipments[id]:["rod","reel","line","hook"].includes(type)?fishingAsset(type,id):null;
  if(src) return `<div class="craftIllustration ${type} visualCraft">${visualImg(src,id,"craftAssetSprite")}</div>`;
  let symbol="⚙";
  if(type==="rod")symbol="╱";
@@ -1040,7 +1230,7 @@ function playerAtk(){
   return atk;
 }
 function prettyItemIcon(type,id){
- const src=type==="weapon"?visualAssets.weapons[id]:type==="equip"?visualAssets.equipments[id]:null;
+ const src=type==="weapon"?visualAssets.weapons[id]:type==="equip"?visualAssets.equipments[id]:["rod","reel","line","hook"].includes(type)?fishingAsset(type,id):null;
  if(src) return visualImg(src,id,"itemAssetSprite");
  let symbol="⚙";
  if(type==="rod")symbol="╱";
@@ -1127,7 +1317,7 @@ function shipLayoutForLevel(lv){
   const layouts={
     1:{
       weapons:[
-        {x:18,y:35,w:34,h:22,side:"left"},
+        {x:23,y:35,w:34,h:22,side:"left"},
         {x:82,y:35,w:34,h:22,side:"right"}
       ],
       equips:[
@@ -1213,8 +1403,19 @@ function renderShipSchematic(){
   return `<div class="maintPanel">${loadPanelHTML()}<div class="maintShipArea visualMaintShip"><div class="slotColumn">${left}</div><div class="shipCenterCore"><div class="shipVisualFrame">${renderShipComposite()}</div><button class="slotButton coreSlotButton ${(maintState.slot==="hull")?"active":""}" data-maint-slot="hull"><small>機体コア</small><strong>機体 Mk.${run.shipLevel}</strong></button></div><div class="slotColumn">${right}</div></div></div>`;
 }
 function renderFishingSchematic(){
-  const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod"],["reel","リール",run.rod.reel+"リール","gear-slot-reel"],["line","ライン",run.rod.line+"ライン","gear-slot-line"],["hook","フック",(hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック"),"gear-slot-hook"]];
-  return `<div class="maintPanel"><div class="gearBlueprint sideFishingView"><div class="gearRod"></div><div class="gearReel"></div><div class="gearLine"></div><div class="gearHookPoint"></div>${parts.map(([k,lbl,title,cls])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><small>${lbl}</small><strong>${title}</strong></button>`).join("")}</div></div>`;
+  const hookName=(hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック");
+  const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod",run.rod.rod],["reel","リール",run.rod.reel+"リール","gear-slot-reel",run.rod.reel],["line","ライン",run.rod.line+"ライン","gear-slot-line",run.rod.line],["hook","フック",hookName,"gear-slot-hook",run.rod.hook]];
+  return `<div class="maintPanel"><div class="gearBlueprint sideFishingView visualFishingRig">
+    <div class="fishingRigCanvas">
+      <div class="rigRodMain">${visualImg(fishingAsset("rod",run.rod.rod),run.rod.rod+"ロッド","rigRodAsset")}</div>
+      <div class="rigReelMain">${visualImg(fishingAsset("reel",run.rod.reel),run.rod.reel+"リール","rigReelAsset")}</div>
+      <div class="rigLineMain">${visualImg(fishingAsset("line",run.rod.line),run.rod.line+"ライン","rigLineAsset")}</div>
+      <div class="rigHookMain">${visualImg(fishingAsset("hook",run.rod.hook),hookName,"rigHookAsset")}</div>
+      <div class="rigLineThread"></div>
+      <div class="rigTipGlow"></div>
+    </div>
+    ${parts.map(([k,lbl,title,cls,id])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><span class="slotMiniIcon">${prettyItemIcon(k,id)}</span><span class="slotText"><small>${lbl}</small><strong>${title}</strong></span></button>`).join("")}
+  </div></div>`;
 }
 function currentCardHTML(type,inst,slotIndex){
   const d=getDef(type,inst.id), cost=normalizeCost(itemUpgradeCost(type,inst));

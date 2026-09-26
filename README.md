@@ -96,3 +96,32 @@ GitHub Pages / Netlify Drop にそのまま配置できます。
 - Mk.5以降はHP・負荷・倉庫など数値系のみ引き続き成長
 - ユーザーの赤/青の位置指定に合わせて各Mkのハードポイント位置を再定義
 - 武器の向きは全スロットで「元画像から時計回り90度」に固定
+
+## v17 Battle System V2
+- 敵をプレイヤーと同じ機体・武器・装備データ系で生成する方式へ刷新
+- 敵装備は毎戦ランダム生成。距離に応じて抽選候補が増加
+- 敵の武器Lv / 装備Lv / 機体Lvは距離で上昇
+- 敵専用ダメージ倍率は序盤約0.28から始まり、距離とともに1.00へ接近
+- 敵HPはプレイヤー基準より大幅に高く、距離に応じて加速して増加
+- 敵部位を「左武器 / 右武器 / 装備 / レーザー / 本体」の5部位に整理
+- 左右武器破壊で対応側の通常武器を全停止
+- 装備破壊で敵装備の自動効果を一括停止
+- レーザー破壊でレーザーQTEを停止
+- 本体は破壊不能で常時攻撃可能
+- どの破壊可能部位へのダメージも敵総HPへ同量反映
+- 敵は武器アクティブ能力を使用せず、通常自動攻撃 + 自動装備効果 + レーザーQTEのみ使用
+- 戦闘画面をトップビューの自艦 / 敵艦表示へ変更
+- QTE成功時に紫色のバリア演出を追加
+
+
+## v17b enemy visual pass
+- Enemy ship / weapon / equipment visuals are wired as 2P hostile variants under `assets/enemy/`
+- Enemy hulls remain top-down hostile red/orange versions and are rendered facing the player in battle.
+- Enemy weapon overlays use the enemy asset set and the existing enemy rotation path, so they appear as the opposing side.
+- Laser turret remains a separate dedicated enemy part/effect for QTE readability.
+
+
+## v17c battle effects pass
+- Added battle FX layer for weapon beams, laser telegraph, impacts, EMP pulse and part-break explosions.
+- Added muzzle/weapon firing emphasis, active-skill flash, hit feedback and enemy laser charge visuals.
+- Enemy destroyed/disabled parts now visually dim their corresponding overlays and laser turret.
