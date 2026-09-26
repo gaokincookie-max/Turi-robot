@@ -1130,3 +1130,32 @@ button.danger{background:#442029;border-color:#7a3440}
 .shipOverlaySprite.rightMount{
   transform:translate(-50%,-50%) scaleX(-1);
 }
+
+/* ===== v14d overlay orientation + stronger size pass ===== */
+.shipWeaponOverlay{
+  z-index:4;
+  transform-origin:center center;
+}
+.shipEquipOverlay{
+  z-index:2;
+  transform:translate(-50%,-50%) scale(1.22);
+  filter:drop-shadow(0 4px 7px rgba(0,0,0,.38)) drop-shadow(0 0 3px rgba(143,114,255,.10));
+}
+.shipOverlaySprite.leftMount{
+  transform:translate(-50%,-50%) rotate(-90deg) scale(1.30);
+}
+.shipOverlaySprite.rightMount{
+  transform:translate(-50%,-50%) rotate(90deg) scale(1.30);
+}
+@media(max-width:560px){
+  .shipEquipOverlay{
+    transform:translate(-50%,-50%) scale(1.16);
+  }
+  .shipOverlaySprite.leftMount,
+  .shipOverlaySprite.rightMount{
+    transform:translate(-50%,-50%) rotate(-90deg) scale(1.22);
+  }
+  .shipOverlaySprite.rightMount{
+    transform:translate(-50%,-50%) rotate(90deg) scale(1.22);
+  }
+}
