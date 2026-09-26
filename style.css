@@ -1100,3 +1100,33 @@ button.danger{background:#442029;border-color:#7a3440}
     height:50px;
   }
 }
+
+/* ===== v14c ship composite overlay pass ===== */
+.shipComposite{
+  position:relative;
+  width:100%;
+  height:100%;
+}
+.shipComposite .shipHullSprite{
+  position:relative;
+  z-index:1;
+}
+.shipOverlaySprite{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  object-fit:contain;
+  pointer-events:none;
+  user-select:none;
+  z-index:3;
+  filter:drop-shadow(0 6px 8px rgba(0,0,0,.45)) drop-shadow(0 0 3px rgba(65,226,255,.14));
+}
+.shipWeaponOverlay{
+  z-index:4;
+}
+.shipEquipOverlay{
+  z-index:2;
+  filter:drop-shadow(0 4px 7px rgba(0,0,0,.38)) drop-shadow(0 0 3px rgba(143,114,255,.10));
+}
+.shipOverlaySprite.rightMount{
+  transform:translate(-50%,-50%) scaleX(-1);
+}

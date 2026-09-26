@@ -1110,6 +1110,82 @@ function loadPanelHTML(){
   const ratio=Math.min(1,getLoad()/Math.max(1,run.maxLoad));
   return `<div><div class="statRow"><span>過負荷ゲージ</span><strong>${getLoad()} / ${run.maxLoad}</strong></div><div class="loadMeterBar"><div style="width:${ratio*100}%"></div></div><div class="statRow" style="margin-top:8px"><span>武器 / 装備 / 倉庫</span><strong>${run.weapons.length}/${run.weaponSlots} ・ ${run.equipments.length}/${run.equipSlots} ・ ${run.storage.length}/${run.storageCap}</strong></div></div>`;
 }
+function shipLayoutForLevel(lv){
+  const layouts={
+    1:{
+      weapons:[
+        {x:28,y:50,w:29,h:18,side:"left"},
+        {x:72,y:50,w:29,h:18,side:"right"}
+      ],
+      equips:[
+        {x:50,y:34,w:22,h:18},
+        {x:50,y:67,w:22,h:18}
+      ]
+    },
+    2:{
+      weapons:[
+        {x:28,y:40,w:27,h:17,side:"left"},
+        {x:72,y:40,w:27,h:17,side:"right"},
+        {x:28,y:61,w:25,h:16,side:"left"}
+      ],
+      equips:[
+        {x:50,y:30,w:21,h:17},
+        {x:50,y:51,w:21,h:17},
+        {x:50,y:73,w:21,h:17}
+      ]
+    },
+    3:{
+      weapons:[
+        {x:26,y:37,w:26,h:16,side:"left"},
+        {x:74,y:37,w:26,h:16,side:"right"},
+        {x:26,y:59,w:26,h:16,side:"left"},
+        {x:74,y:59,w:26,h:16,side:"right"}
+      ],
+      equips:[
+        {x:50,y:28,w:20,h:16},
+        {x:38,y:49,w:19,h:15},
+        {x:62,y:49,w:19,h:15},
+        {x:50,y:71,w:20,h:16}
+      ]
+    },
+    4:{
+      weapons:[
+        {x:25,y:35,w:24,h:15,side:"left"},
+        {x:75,y:35,w:24,h:15,side:"right"},
+        {x:25,y:52,w:24,h:15,side:"left"},
+        {x:75,y:52,w:24,h:15,side:"right"},
+        {x:25,y:69,w:23,h:14,side:"left"}
+      ],
+      equips:[
+        {x:50,y:24,w:18,h:15},
+        {x:39,y:40,w:17,h:14},
+        {x:61,y:40,w:17,h:14},
+        {x:39,y:62,w:17,h:14},
+        {x:61,y:62,w:17,h:14}
+      ]
+    }
+  };
+  return layouts[Math.max(1,Math.min(4,lv||1))]||layouts[1];
+}
+function renderShipComposite(){
+  const lv=Math.max(1,Math.min(4,run.shipLevel||1));
+  const layout=shipLayoutForLevel(lv);
+  let out=`<div class="shipComposite">${visualImg(hullAsset(),`機体 Mk.${run.shipLevel}`,"shipHullSprite")}`;
+  run.equipments.forEach((inst,i)=>{
+    const pos=layout.equips[i];
+    const src=visualAssets.equipments[inst?.id];
+    if(!pos||!src) return;
+    out += `<img class="shipOverlaySprite shipEquipOverlay" src="${src}" alt="" style="left:${pos.x}%;top:${pos.y}%;width:${pos.w}%;height:${pos.h}%" draggable="false">`;
+  });
+  run.weapons.forEach((inst,i)=>{
+    const pos=layout.weapons[i];
+    const src=visualAssets.weapons[inst?.id];
+    if(!pos||!src) return;
+    out += `<img class="shipOverlaySprite shipWeaponOverlay ${pos.side==="right"?"rightMount":"leftMount"}" src="${src}" alt="" style="left:${pos.x}%;top:${pos.y}%;width:${pos.w}%;height:${pos.h}%" draggable="false">`;
+  });
+  out += `</div>`;
+  return out;
+}
 function renderShipSchematic(){
   let left='', right='';
   for(let i=0;i<run.weaponSlots;i++){
@@ -1122,7 +1198,7 @@ function renderShipSchematic(){
     const icon=inst?prettyItemIcon("equip",inst.id):`<span class="slotEmptyMark">＋</span>`;
     right += `<button class="slotButton visualSlot ${inst?"":"empty"} ${(maintState.slot===`equip:${i}`)?"active":""}" data-maint-slot="equip:${i}">${icon}<small>装備 ${i+1}</small><strong>${title}</strong></button>`;
   }
-  return `<div class="maintPanel">${loadPanelHTML()}<div class="maintShipArea visualMaintShip"><div class="slotColumn">${left}</div><div class="shipCenterCore"><div class="shipVisualFrame">${visualImg(hullAsset(),`機体 Mk.${run.shipLevel}`,"shipHullSprite")}</div><button class="slotButton coreSlotButton ${(maintState.slot==="hull")?"active":""}" data-maint-slot="hull"><small>機体コア</small><strong>機体 Mk.${run.shipLevel}</strong></button></div><div class="slotColumn">${right}</div></div></div>`;
+  return `<div class="maintPanel">${loadPanelHTML()}<div class="maintShipArea visualMaintShip"><div class="slotColumn">${left}</div><div class="shipCenterCore"><div class="shipVisualFrame">${renderShipComposite()}</div><button class="slotButton coreSlotButton ${(maintState.slot==="hull")?"active":""}" data-maint-slot="hull"><small>機体コア</small><strong>機体 Mk.${run.shipLevel}</strong></button></div><div class="slotColumn">${right}</div></div></div>`;
 }
 function renderFishingSchematic(){
   const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod"],["reel","リール",run.rod.reel+"リール","gear-slot-reel"],["line","ライン",run.rod.line+"ライン","gear-slot-line"],["hook","フック",(hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック"),"gear-slot-hook"]];
