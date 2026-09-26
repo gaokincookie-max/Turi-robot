@@ -1195,3 +1195,14 @@ button.danger{background:#442029;border-color:#7a3440}
     transform:translate(-50%,-50%) rotate(90deg) scale(1.42);
   }
 }
+
+/* ===== v15 stage caps + annotated hardpoint layout ===== */
+.shipWeaponOverlay.fixedWeaponRotation{
+  transform:translate(-50%,-50%) rotate(90deg) scale(1.52) !important;
+  transform-origin:center center;
+}
+@media(max-width:560px){
+  .shipWeaponOverlay.fixedWeaponRotation{
+    transform:translate(-50%,-50%) rotate(90deg) scale(1.42) !important;
+  }
+}

@@ -109,6 +109,17 @@ function hullAsset(){
  const mk=Math.max(1,Math.min(4,run?.shipLevel||1));
  return visualAssets.ships[mk];
 }
+function shipStageInfo(level){
+ const lv=Math.max(1,Math.floor(level||1));
+ const mk=Math.min(4,lv);
+ const table={
+   1:{weaponSlots:2,equipSlots:2},
+   2:{weaponSlots:3,equipSlots:3},
+   3:{weaponSlots:4,equipSlots:4},
+   4:{weaponSlots:4,equipSlots:5}
+ };
+ return {mk,...table[mk]};
+}
 
 const defaultMeta=()=>({
  tokens:0,
@@ -277,8 +288,9 @@ function recalcPlayer(){
  if(!run.hp)run.hp=run.maxHp;
  run.mods={shield,repair,atkMult,fireRate,qte,partBonus};
  run.maxLoad=10+(run.shipLevel-1)*5;
- run.weaponSlots=2+Math.floor((run.shipLevel-1)/1);
- run.equipSlots=2+Math.floor((run.shipLevel-1)/1);
+ const stage=shipStageInfo(run.shipLevel);
+ run.weaponSlots=stage.weaponSlots;
+ run.equipSlots=stage.equipSlots;
  run.storageCap=4+(run.shipLevel-1)*2+Math.floor((meta.upgrades.storage||0)/2);
  updateHUD();
 }
@@ -1012,8 +1024,9 @@ function recalcPlayer(){
  if(!run.hp)run.hp=run.maxHp;
  run.mods={shield,repair,atkMult,fireRate,qte,partBonus};
  run.maxLoad=10+(run.shipLevel-1)*5;
- run.weaponSlots=2+Math.floor((run.shipLevel-1)/1);
- run.equipSlots=2+Math.floor((run.shipLevel-1)/1);
+ const stage=shipStageInfo(run.shipLevel);
+ run.weaponSlots=stage.weaponSlots;
+ run.equipSlots=stage.equipSlots;
  run.storageCap=4+(run.shipLevel-1)*2+Math.floor((meta.upgrades.storage||0)/2);
  updateHUD();
 }
@@ -1114,54 +1127,53 @@ function shipLayoutForLevel(lv){
   const layouts={
     1:{
       weapons:[
-        {x:20,y:38,w:34,h:22,side:"left"},
-        {x:80,y:38,w:34,h:22,side:"right"}
+        {x:18,y:35,w:34,h:22,side:"left"},
+        {x:82,y:35,w:34,h:22,side:"right"}
       ],
       equips:[
-        {x:50,y:34,w:22,h:18},
-        {x:50,y:67,w:22,h:18}
+        {x:50,y:31,w:25,h:19},
+        {x:50,y:58,w:24,h:18}
       ]
     },
     2:{
       weapons:[
-        {x:20,y:31,w:31,h:20,side:"left"},
-        {x:80,y:31,w:31,h:20,side:"right"},
-        {x:19,y:51,w:29,h:19,side:"left"}
+        {x:17,y:35,w:32,h:21,side:"left"},
+        {x:83,y:35,w:32,h:21,side:"right"},
+        {x:50,y:56,w:30,h:19,side:"center"}
       ],
       equips:[
-        {x:50,y:30,w:21,h:17},
-        {x:50,y:51,w:21,h:17},
-        {x:50,y:73,w:21,h:17}
+        {x:50,y:26,w:26,h:19},
+        {x:36,y:68,w:23,h:18},
+        {x:64,y:68,w:23,h:18}
       ]
     },
     3:{
       weapons:[
-        {x:19,y:29,w:30,h:19,side:"left"},
-        {x:81,y:29,w:30,h:19,side:"right"},
-        {x:18,y:48,w:30,h:19,side:"left"},
-        {x:82,y:48,w:30,h:19,side:"right"}
+        {x:16,y:31,w:30,h:20,side:"left"},
+        {x:84,y:31,w:30,h:20,side:"right"},
+        {x:16,y:60,w:30,h:20,side:"left"},
+        {x:84,y:60,w:30,h:20,side:"right"}
       ],
       equips:[
-        {x:50,y:28,w:20,h:16},
-        {x:38,y:49,w:19,h:15},
-        {x:62,y:49,w:19,h:15},
-        {x:50,y:71,w:20,h:16}
+        {x:50,y:22,w:24,h:18},
+        {x:39,y:50,w:22,h:17},
+        {x:61,y:50,w:22,h:17},
+        {x:50,y:73,w:22,h:17}
       ]
     },
     4:{
       weapons:[
-        {x:18,y:27,w:28,h:18,side:"left"},
-        {x:82,y:27,w:28,h:18,side:"right"},
-        {x:17,y:44,w:28,h:18,side:"left"},
-        {x:83,y:44,w:28,h:18,side:"right"},
-        {x:17,y:61,w:27,h:17,side:"left"}
+        {x:15,y:30,w:29,h:19,side:"left"},
+        {x:85,y:30,w:29,h:19,side:"right"},
+        {x:15,y:62,w:29,h:19,side:"left"},
+        {x:85,y:62,w:29,h:19,side:"right"}
       ],
       equips:[
-        {x:50,y:24,w:18,h:15},
-        {x:39,y:40,w:17,h:14},
-        {x:61,y:40,w:17,h:14},
-        {x:39,y:62,w:17,h:14},
-        {x:61,y:62,w:17,h:14}
+        {x:37,y:27,w:21,h:17},
+        {x:63,y:27,w:21,h:17},
+        {x:50,y:55,w:21,h:17},
+        {x:37,y:70,w:20,h:16},
+        {x:63,y:70,w:20,h:16}
       ]
     }
   };
@@ -1181,7 +1193,7 @@ function renderShipComposite(){
     const pos=layout.weapons[i];
     const src=visualAssets.weapons[inst?.id];
     if(!pos||!src) return;
-    out += `<img class="shipOverlaySprite shipWeaponOverlay ${pos.side==="right"?"rightMount":"leftMount"}" src="${src}" alt="" style="left:${pos.x}%;top:${pos.y}%;width:${pos.w}%;height:${pos.h}%" draggable="false">`;
+    out += `<img class="shipOverlaySprite shipWeaponOverlay fixedWeaponRotation" src="${src}" alt="" style="left:${pos.x}%;top:${pos.y}%;width:${pos.w}%;height:${pos.h}%" draggable="false">`;
   });
   out += `</div>`;
   return out;
