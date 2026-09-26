@@ -67,6 +67,49 @@ const fishingRecipes={
  }
 };
 
+
+const visualAssets={
+ materials:{
+   metal:"assets/materials/mat_metal.png",
+   circuit:"assets/materials/mat_circuit.png",
+   mech:"assets/materials/mat_mech.png",
+   cell:"assets/materials/mat_cell.png"
+ },
+ ships:{
+   1:"assets/ships/ship_mk1.png",
+   2:"assets/ships/ship_mk2.png",
+   3:"assets/ships/ship_mk3.png",
+   4:"assets/ships/ship_mk4.png"
+ },
+ weapons:{
+   pulse:"assets/weapons/w_pulse.png",
+   bolt:"assets/weapons/w_twin.png",
+   laser:"assets/weapons/w_laser.png",
+   missile:"assets/weapons/w_missile.png",
+   emp:"assets/weapons/w_emp.png",
+   barrier:"assets/weapons/w_barrier.png",
+   scatter:"assets/weapons/w_scatter.png",
+   piercer:"assets/weapons/w_piercer.png"
+ },
+ equipments:{
+   armorplate:"assets/equipment/e_armor.png",
+   shield:"assets/equipment/e_shield.png",
+   repair:"assets/equipment/e_repair.png",
+   aim:"assets/equipment/e_aim.png",
+   cooler:"assets/equipment/e_cooler.png",
+   bulk:"assets/equipment/e_cargo.png",
+   sensor:"assets/equipment/e_sensor.png",
+   stabilizer:"assets/equipment/e_salvage.png"
+ }
+};
+function visualImg(src,alt="",cls="assetSprite"){
+ return `<img class="${cls}" src="${src}" alt="${alt}" loading="lazy" draggable="false">`;
+}
+function hullAsset(){
+ const mk=Math.max(1,Math.min(4,run?.shipLevel||1));
+ return visualAssets.ships[mk];
+}
+
 const defaultMeta=()=>({
  tokens:0,
  upgrades:Object.fromEntries(upgradeDefs.map(x=>[x.id,0])),
@@ -734,24 +777,17 @@ function renderUpgradeSubScreen(major="ship",minor=null){
 }
 
 function materialIcon(mat){
- return {metal:"▰",circuit:"▦",mech:"⚙",cell:"◆"}[mat]||"◇";
+ const src=visualAssets.materials[mat];
+ return src?visualImg(src,mat,"materialSprite"):"◇";
 }
 function itemIconHTML(type,id){
+ const src=type==="weapon"?visualAssets.weapons[id]:type==="equip"?visualAssets.equipments[id]:null;
+ if(src) return `<div class="craftIllustration ${type} visualCraft">${visualImg(src,id,"craftAssetSprite")}</div>`;
  let symbol="⚙";
- if(type==="weapon"){
-   const w=weapons.find(x=>x.id===id);
-   symbol=w?.active?"✦":"▰━";
- }else if(type==="equip"){
-   symbol="⬡";
- }else if(type==="rod"){
-   symbol="╱";
- }else if(type==="reel"){
-   symbol="◉";
- }else if(type==="line"){
-   symbol="⌁";
- }else if(type==="hook"){
-   symbol="J";
- }
+ if(type==="rod")symbol="╱";
+ else if(type==="reel")symbol="◉";
+ else if(type==="line")symbol="⌁";
+ else if(type==="hook")symbol="J";
  return `<div class="craftIllustration ${type}">${symbol}</div>`;
 }
 function materialCostVisual(cost){
@@ -991,13 +1027,13 @@ function playerAtk(){
   return atk;
 }
 function prettyItemIcon(type,id){
+ const src=type==="weapon"?visualAssets.weapons[id]:type==="equip"?visualAssets.equipments[id]:null;
+ if(src) return visualImg(src,id,"itemAssetSprite");
  let symbol="⚙";
- if(type==="weapon"){ const w=weapons.find(x=>x.id===id); symbol=w?.active?"✦":"▰━"; }
- else if(type==="equip"){ symbol="⬡"; }
- else if(type==="rod"){ symbol="╱"; }
- else if(type==="reel"){ symbol="◉"; }
- else if(type==="line"){ symbol="⌁"; }
- else if(type==="hook"){ symbol="J"; }
+ if(type==="rod")symbol="╱";
+ else if(type==="reel")symbol="◉";
+ else if(type==="line")symbol="⌁";
+ else if(type==="hook")symbol="J";
  return symbol;
 }
 function getDef(type,id){ return (type==="weapon"?weapons:equipments).find(x=>x.id===id); }
@@ -1078,13 +1114,15 @@ function renderShipSchematic(){
   let left='', right='';
   for(let i=0;i<run.weaponSlots;i++){
     const inst=run.weapons[i], title=inst?`${itemName({type:"weapon",id:inst.id})} Lv.${inst.lvl||1}`:"空き";
-    left += `<button class="slotButton ${inst?"":"empty"} ${(maintState.slot===`weapon:${i}`)?"active":""}" data-maint-slot="weapon:${i}"><small>武器スロット ${i+1}</small><strong>${title}</strong></button>`;
+    const icon=inst?prettyItemIcon("weapon",inst.id):`<span class="slotEmptyMark">＋</span>`;
+    left += `<button class="slotButton visualSlot ${inst?"":"empty"} ${(maintState.slot===`weapon:${i}`)?"active":""}" data-maint-slot="weapon:${i}">${icon}<small>武器 ${i+1}</small><strong>${title}</strong></button>`;
   }
   for(let i=0;i<run.equipSlots;i++){
     const inst=run.equipments[i], title=inst?`${itemName({type:"equip",id:inst.id})} Lv.${inst.lvl||1}`:"空き";
-    right += `<button class="slotButton ${inst?"":"empty"} ${(maintState.slot===`equip:${i}`)?"active":""}" data-maint-slot="equip:${i}"><small>装備スロット ${i+1}</small><strong>${title}</strong></button>`;
+    const icon=inst?prettyItemIcon("equip",inst.id):`<span class="slotEmptyMark">＋</span>`;
+    right += `<button class="slotButton visualSlot ${inst?"":"empty"} ${(maintState.slot===`equip:${i}`)?"active":""}" data-maint-slot="equip:${i}">${icon}<small>装備 ${i+1}</small><strong>${title}</strong></button>`;
   }
-  return `<div class="maintPanel">${loadPanelHTML()}<div class="maintShipArea"><div class="slotColumn">${left}</div><div class="shipCenterCore"><div class="shipBlueprint"></div><button class="slotButton coreSlotButton ${(maintState.slot==="hull")?"active":""}" data-maint-slot="hull"><small>機体コア</small><strong>機体 Mk.${run.shipLevel}</strong></button></div><div class="slotColumn">${right}</div></div></div>`;
+  return `<div class="maintPanel">${loadPanelHTML()}<div class="maintShipArea visualMaintShip"><div class="slotColumn">${left}</div><div class="shipCenterCore"><div class="shipVisualFrame">${visualImg(hullAsset(),`機体 Mk.${run.shipLevel}`,"shipHullSprite")}</div><button class="slotButton coreSlotButton ${(maintState.slot==="hull")?"active":""}" data-maint-slot="hull"><small>機体コア</small><strong>機体 Mk.${run.shipLevel}</strong></button></div><div class="slotColumn">${right}</div></div></div>`;
 }
 function renderFishingSchematic(){
   const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod"],["reel","リール",run.rod.reel+"リール","gear-slot-reel"],["line","ライン",run.rod.line+"ライン","gear-slot-line"],["hook","フック",(hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック"),"gear-slot-hook"]];
@@ -1096,7 +1134,7 @@ function currentCardHTML(type,inst,slotIndex){
 }
 function hullCardHTML(){
   const cost=normalizeCost(shipUpgradeCostObj());
-  return `<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge">🛸</div><div><div class="detailSectionTitle" style="margin:0">機体 Mk.${run.shipLevel}</div><div style="font-size:.8rem;color:#aac0de">船体の耐久・スロット・積載を拡張します。</div></div></div><div class="detailMeta"><span class="metaChip">HP ${run.maxHp}</span><span class="metaChip">最大負荷 ${run.maxLoad}</span><span class="metaChip">武器枠 ${run.weaponSlots}</span><span class="metaChip">装備枠 ${run.equipSlots}</span><span class="metaChip">倉庫 ${run.storage.length}/${run.storageCap}</span></div><div class="detailSectionTitle">次の強化コスト</div>${materialNeedListHTML(cost)}<div class="actions"><button id="shipUpgradeBtnV9" class="primary" ${costAfford(cost)?"":"disabled"}>船体強化</button></div></div>`;
+  return `<div class="bigCurrentCard"><div class="topLine"><div class="bigIconBadge hullBadge">${visualImg(hullAsset(),`機体 Mk.${run.shipLevel}`,"hullBadgeSprite")}</div><div><div class="detailSectionTitle" style="margin:0">機体 Mk.${run.shipLevel}</div><div style="font-size:.8rem;color:#aac0de">船体の耐久・スロット・積載を拡張します。</div></div></div><div class="detailMeta"><span class="metaChip">HP ${run.maxHp}</span><span class="metaChip">最大負荷 ${run.maxLoad}</span><span class="metaChip">武器枠 ${run.weaponSlots}</span><span class="metaChip">装備枠 ${run.equipSlots}</span><span class="metaChip">倉庫 ${run.storage.length}/${run.storageCap}</span></div><div class="detailSectionTitle">次の強化コスト</div>${materialNeedListHTML(cost)}<div class="actions"><button id="shipUpgradeBtnV9" class="primary" ${costAfford(cost)?"":"disabled"}>船体強化</button></div></div>`;
 }
 function simpleStorageCardHTML(inst,type,slotIndex){
   const d=getDef(type,inst.id);
