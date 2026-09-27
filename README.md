@@ -153,3 +153,9 @@ This removes the previous double/triple source-of-truth problem and makes future
 - All three scenes share one coordinate/anchor/rotation renderer.
 - Removed the extra game-side 180-degree enemy rotation. Enemy orientation now comes from `battle_enemy`.
 - The ship component viewBox is derived from the full editor scene so slot changes do not recenter the ship.
+
+## v22 exact-editor fix
+- Replaced game ship/equipment/fishing PNGs with the exact `_processed.value.url` PNG bytes used by the supplied editor JSON.
+- Mirrored those editor assets into enemy visual folders because `battle_enemy` in the supplied editor layout references the same editor assets.
+- Removed legacy CSS transform classes from SVG-rendered ship parts. Those CSS rules were overriding the SVG transform attributes, so editor rotations/anchor transforms were not actually being honored.
+- The editor scene data remains scene-specific: `maint_ship`, `battle_player`, and `battle_enemy`.

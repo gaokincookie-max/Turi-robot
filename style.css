@@ -1609,3 +1609,17 @@ button.danger{background:#442029;border-color:#7a3440}
   top:48%;
   z-index:8;
 }
+
+/* ===== v22 exact editor-SVG renderer =====
+   Important: SVG elements keep their own transform="..." attributes.
+   Do NOT reuse the legacy .layoutDriven/.battleOverlay transform rules here. */
+.canonicalShipSvg{width:100%;height:100%;display:block;overflow:visible;}
+.canonicalShipSvg .svgShipHull,
+.canonicalShipSvg .svgShipPart{pointer-events:none;transform-box:view-box;}
+.canonicalShipSvg .svgShipHull{filter:drop-shadow(0 10px 16px rgba(0,0,0,.48));}
+.canonicalShipSvg .svgShipPart{filter:drop-shadow(0 4px 5px rgba(0,0,0,.42));}
+.enemyComposite .canonicalShipSvg .svgShipHull{filter:drop-shadow(0 10px 16px rgba(0,0,0,.48)) drop-shadow(0 0 8px rgba(255,93,122,.12));}
+.canonicalShipSvg .battleWeapon.activePulse{animation:activePulseFilterV22 .34s ease-out;}
+.enemyComposite .canonicalShipSvg .battleWeapon.activePulse{animation:enemyPulseFilterV22 .34s ease-out;}
+@keyframes activePulseFilterV22{0%{filter:brightness(1.1)}50%{filter:brightness(1.9) saturate(1.35) drop-shadow(0 0 18px rgba(122,248,255,.8))}100%{filter:drop-shadow(0 4px 5px rgba(0,0,0,.42))}}
+@keyframes enemyPulseFilterV22{0%{filter:brightness(1.1)}50%{filter:brightness(1.9) saturate(1.35) drop-shadow(0 0 18px rgba(255,122,122,.8))}100%{filter:drop-shadow(0 4px 5px rgba(0,0,0,.42))}}

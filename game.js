@@ -760,7 +760,7 @@ function renderEditorShipSvg(sceneName,shipLevel,weaponLoadout,equipmentLoadout,
  elements.forEach(el=>{
    if(el.key==='ship'){
      const src=assetSet.ships[mk] || visualAssets.ships[mk];
-     body+=svgImage(src,el,{ax:.5,ay:.5},battle?'battleHullSprite layoutSceneHull':'shipHullSprite layoutSceneHull');
+     body+=svgImage(src,el,{ax:.5,ay:.5},battle?'svgShipHull battleHullExact':'svgShipHull maintHullExact');
      return;
    }
    if(/^weapon\d+$/.test(el.key)){
@@ -769,7 +769,7 @@ function renderEditorShipSvg(sceneName,shipLevel,weaponLoadout,equipmentLoadout,
      const src=assetSet.weapons[inst.id] || visualAssets.weapons[inst.id]; if(!src)return;
      // IMPORTANT: anchor belongs to the actual equipped asset, while x/y/rotation belong to this editor scene.
      const meta=editorMetaFor('weapons',inst.id), side=inst.side || shipWeaponSideForSlot(mk,idx), group=(side==='right'?'rightWeapon':'leftWeapon');
-     const cls=battle?'battleOverlay battleWeapon layoutDriven':'shipOverlaySprite shipWeaponOverlay layoutDriven';
+     const cls=battle?'svgShipPart battleWeapon':'svgShipPart maintWeaponExact';
      body+=svgImage(src,el,meta,cls,`data-part-group="${group}" data-slot="${idx+1}" data-weapon-id="${escAttr(inst.id)}"`);
      return;
    }
@@ -777,7 +777,7 @@ function renderEditorShipSvg(sceneName,shipLevel,weaponLoadout,equipmentLoadout,
      const idx=Math.max(0,parseInt(el.key.replace('equip',''),10)-1), inst=equipmentLoadout?.[idx];
      if(!inst)return;
      const src=assetSet.equipments[inst.id] || visualAssets.equipments[inst.id]; if(!src)return;
-     const meta=editorMetaFor('equipments',inst.id), cls=battle?'battleOverlay battleEquip layoutDriven':'shipOverlaySprite shipEquipOverlay layoutDriven';
+     const meta=editorMetaFor('equipments',inst.id), cls=battle?'svgShipPart battleEquip':'svgShipPart maintEquipExact';
      body+=svgImage(src,el,meta,cls,`data-part-group="equipment" data-slot="${idx+1}"`);
    }
  });
