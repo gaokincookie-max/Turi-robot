@@ -133,3 +133,15 @@ GitHub Pages / Netlify Drop にそのまま配置できます。
 - Enemy assembly is the same geometry rotated 180° as one object, while retaining enemy 2P-color assets and the separate laser turret.
 - Editor A/M/T metadata is preserved; A (anchor) is used for actual overlay placement.
 - User-edited weapon and fishing sprites from the JSON were written back into the runtime asset files.
+
+## v20: Editor-canonical ship rendering
+
+The ship assembly drawn in the layout editor's `maint_ship` scene is now the single source of truth for hull/weapon/equipment placement.
+
+- Maintenance and battle both render from `maint_ship`.
+- `battle_player` / `battle_enemy` no longer define independent hull/weapon/equipment geometry at runtime.
+- Editor coordinates are interpreted on the editor's 9:16 virtual canvas and uniformly scaled into the game frame, so a rectangular battle frame cannot stretch the layout.
+- Enemy ships rotate the completed canonical assembly by 180 degrees instead of separately rotating every part.
+- The enemy-only laser remains a battle-specific overlay because it is not part of the maintenance ship assembly.
+
+This removes the previous double/triple source-of-truth problem and makes future editor adjustments authoritative for the game ship layout.
