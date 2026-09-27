@@ -125,3 +125,11 @@ GitHub Pages / Netlify Drop にそのまま配置できます。
 - Added battle FX layer for weapon beams, laser telegraph, impacts, EMP pulse and part-break explosions.
 - Added muzzle/weapon firing emphasis, active-skill flash, hit feedback and enemy laser charge visuals.
 - Enemy destroyed/disabled parts now visually dim their corresponding overlays and laser turret.
+
+
+## v18 layout-editor import
+- Imported the user-adjusted `void-angler-layout-v3` asset cuts and layout values.
+- Player maintenance ship layout is now the canonical ship assembly. Battle player and enemy reuse the same hardpoint geometry instead of maintaining a separate battle arrangement.
+- Enemy assembly is the same geometry rotated 180° as one object, while retaining enemy 2P-color assets and the separate laser turret.
+- Editor A/M/T metadata is preserved; A (anchor) is used for actual overlay placement.
+- User-edited weapon and fishing sprites from the JSON were written back into the runtime asset files.

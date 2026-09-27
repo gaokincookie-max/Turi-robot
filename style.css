@@ -1533,3 +1533,42 @@ button.danger{background:#442029;border-color:#7a3440}
 @keyframes corePulse{from{box-shadow:0 0 10px rgba(255,81,110,.35)}to{box-shadow:0 0 18px rgba(255,155,168,.88),0 0 28px rgba(255,88,119,.55)}}
 .qteOverlay.warning #qteText{color:#ffb2bf;text-shadow:0 0 10px rgba(255,102,124,.62);letter-spacing:.18em;}
 .qteOverlay.warning .qteBtn{box-shadow:0 0 24px rgba(174,104,255,.45), 0 0 12px rgba(255,118,138,.15);}
+
+
+/* ===== v18 layout-editor import ===== */
+.shipOverlaySprite.layoutDriven,
+.battleOverlay.layoutDriven,
+.rigLayoutItem{
+  transform-origin:var(--layout-ax,50%) var(--layout-ay,50%) !important;
+  transform:rotate(var(--layout-rot,0deg)) scale(var(--layout-scale,1)) !important;
+}
+.shipOverlaySprite.layoutDriven,
+.battleOverlay.layoutDriven{
+  object-fit:contain;
+}
+/* Battle uses the exact same assembled-ship aspect as maintenance. */
+.battleShipVisual{display:flex;align-items:center;justify-content:center;}
+.battleShipComposite{
+  position:relative;
+  height:100%;
+  width:auto;
+  aspect-ratio:220 / 260;
+  max-width:100%;
+  flex:0 0 auto;
+}
+.enemyComposite{transform:rotate(180deg);transform-origin:50% 50%;}
+.enemyComposite .battleHullSprite{transform:none !important;}
+.enemyComposite .battleOverlay{transform-origin:var(--layout-ax,50%) var(--layout-ay,50%) !important;transform:rotate(var(--layout-rot,0deg)) scale(var(--layout-scale,1)) !important;}
+.enemyComposite .battleEquip{transform-origin:var(--layout-ax,50%) var(--layout-ay,50%) !important;transform:rotate(var(--layout-rot,0deg)) scale(var(--layout-scale,1)) !important;}
+.enemyLaserTurret{top:13% !important;bottom:auto !important;transform:translate(-50%,-50%) !important;}
+.enemyLaserTurret.charging{animation:turretChargeV18 .28s linear infinite alternate;}
+@keyframes turretChargeV18{from{transform:translate(-50%,-50%) scale(1)}to{transform:translate(-50%,-50%) scale(1.06)}}
+/* Active flash must not overwrite editor-authored transforms. */
+.battleOverlay.activePulse{animation:activePulseFilterV18 .34s ease-out;}
+@keyframes activePulseFilterV18{0%{filter:brightness(1.1) saturate(1)}50%{filter:brightness(1.9) saturate(1.35) drop-shadow(0 0 18px rgba(122,248,255,.8))}100%{filter:drop-shadow(0 4px 5px rgba(0,0,0,.42))}}
+.enemyComposite .battleWeapon.activePulse{animation:enemyPulseFilterV18 .34s ease-out;}
+@keyframes enemyPulseFilterV18{0%{filter:brightness(1.1) saturate(1)}50%{filter:brightness(1.9) saturate(1.35) drop-shadow(0 0 18px rgba(255,122,122,.8))}100%{filter:drop-shadow(0 4px 5px rgba(0,0,0,.42))}}
+/* Fishing maintenance layout imported from the editor. */
+.editorFishingRig{position:absolute;inset:0;}
+.rigLayoutItem{position:absolute;z-index:3;pointer-events:none;}
+.rigLayoutAsset{width:100%;height:100%;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 8px 12px rgba(0,0,0,.35));}

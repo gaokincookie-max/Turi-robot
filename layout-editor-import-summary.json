@@ -1,0 +1,13 @@
+{
+  "source": "void-angler-layout-v3-battle-ship-shape-fixed.json",
+  "version": 3.1,
+  "applied": [
+    "edited weapon sprites",
+    "edited fishing sprites",
+    "A anchor placement metadata",
+    "maintenance ship hardpoint layout as canonical layout",
+    "same assembled ship geometry in maintenance and battle",
+    "enemy uses canonical geometry rotated 180 degrees",
+    "maintenance fishing visual layout"
+  ]
+}

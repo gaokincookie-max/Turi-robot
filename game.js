@@ -136,6 +136,24 @@ const enemyVisualAssets={
    stabilizer:"assets/enemy/equipment/e_salvage.png"
  }
 };
+// ===== v18: layout editor import =====
+const editorAssetMeta = {"weapons":{"pulse":{"ax":0.552817,"ay":0.503817,"mx":0.725352,"my":0.5,"tx":0.309859,"ty":0.503817},"bolt":{"ax":0.553571,"ay":0.514286,"mx":0.775,"my":0.514286,"tx":0.260714,"ty":0.511111},"laser":{"ax":0.553719,"ay":0.560907,"mx":0.805785,"my":0.555241,"tx":0.268595,"ty":0.558074},"missile":{"ax":0.541502,"ay":0.529231,"mx":0.766798,"my":0.529231,"tx":0.296443,"ty":0.529231},"emp":{"ax":0.5,"ay":0.5,"mx":0.757322,"my":0.509036,"tx":0.372385,"ty":0.503012},"barrier":{"ax":0.5,"ay":0.52819,"mx":0.77381,"my":0.537092,"tx":0.388889,"ty":0.534125},"scatter":{"ax":0.561475,"ay":0.546875,"mx":0.77459,"my":0.5375,"tx":0.221311,"ty":0.540625},"piercer":{"ax":0.565826,"ay":0.523121,"mx":0.812325,"my":0.523121,"tx":0.193277,"ty":0.526012}},"equipments":{"armorplate":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"shield":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"repair":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"aim":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"cooler":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"bulk":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"sensor":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"stabilizer":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5}},"fishing":{"rod":{"standard":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.497778,"ty":0.496471},"stable":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.497748,"ty":0.5},"fast":{"ax":0.475862,"ay":0.476773,"mx":0.473563,"my":0.471883,"tx":0.473563,"ty":0.471883},"heavy":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.5,"ty":0.49642}},"reel":{"standard":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.5,"ty":0.5},"stable":{"ax":0.495627,"ay":0.41629,"mx":0.495627,"my":0.429864,"tx":0.492711,"ty":0.420814},"fast":{"ax":0.501672,"ay":0.463964,"mx":0.501672,"my":0.468468,"tx":0.498328,"ty":0.468468},"heavy":{"ax":0.462687,"ay":0.438735,"mx":0.462687,"my":0.442688,"tx":0.462687,"ty":0.438735}},"line":{"standard":{"ax":0.461847,"ay":0.489362,"mx":0.461847,"my":0.489362,"tx":0.461847,"ty":0.489362},"stable":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"fast":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"heavy":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5}},"hook":{"standard":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"magnet":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"recovery":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"military":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5},"probe":{"ax":0.5,"ay":0.5,"mx":0.5,"my":0.5,"tx":0.85,"ty":0.5}}}};
+const editorCanonicalShipLayouts = {"1":{"weapons":[{"x":17.857,"y":75.0,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"left"},{"x":82.143,"y":75.0,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"right"}],"equips":[{"x":51.786,"y":53.571,"w":19.643,"h":28.571,"rot":0,"scale":1.5},{"x":50.0,"y":114.286,"w":19.643,"h":28.571,"rot":0,"scale":1.5}]},"2":{"weapons":[{"x":17.857,"y":50.0,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"left"},{"x":85.714,"y":57.143,"w":23.214,"h":28.571,"rot":91,"scale":1,"side":"right"},{"x":50.0,"y":25.0,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"center"}],"equips":[{"x":51.786,"y":46.429,"w":19.643,"h":28.571,"rot":0,"scale":1.5},{"x":64.286,"y":114.286,"w":19.643,"h":28.571,"rot":0,"scale":1.5},{"x":39.286,"y":114.286,"w":19.643,"h":28.571,"rot":0,"scale":1.5}]},"3":{"weapons":[{"x":12.5,"y":50.0,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"left"},{"x":87.5,"y":50.0,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"right"},{"x":25.0,"y":103.571,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"left"},{"x":82.143,"y":103.571,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"right"}],"equips":[{"x":51.786,"y":35.714,"w":19.643,"h":28.571,"rot":0,"scale":1.5},{"x":50.0,"y":89.286,"w":19.643,"h":28.571,"rot":0,"scale":1.5},{"x":37.5,"y":117.857,"w":19.643,"h":28.571,"rot":0,"scale":1.5},{"x":66.071,"y":110.714,"w":19.643,"h":28.571,"rot":0,"scale":1.5}]},"4":{"weapons":[{"x":14.286,"y":57.143,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"left"},{"x":87.5,"y":60.714,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"right"},{"x":14.286,"y":110.714,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"left"},{"x":94.643,"y":110.714,"w":23.214,"h":28.571,"rot":90,"scale":1,"side":"right"}],"equips":[{"x":51.786,"y":32.143,"w":19.643,"h":28.571,"rot":0,"scale":1.5},{"x":50.0,"y":75.0,"w":19.643,"h":28.571,"rot":0,"scale":1.5},{"x":50.0,"y":128.571,"w":19.643,"h":28.571,"rot":0,"scale":1.5},{"x":33.929,"y":100.0,"w":19.643,"h":28.571,"rot":0,"scale":1.5},{"x":69.643,"y":114.286,"w":19.643,"h":28.571,"rot":0,"scale":1.5}]}};
+const editorFishingLayout = {"rod":{"x":45,"y":46,"w":42,"h":20,"rotation":0,"scale":1},"reel":{"x":30,"y":41,"w":18,"h":14,"rotation":1,"scale":1},"line":{"x":65,"y":46,"w":16,"h":10,"rotation":1,"scale":1},"hook":{"x":50,"y":53,"w":13,"h":11,"rotation":1,"scale":1}};
+function editorMetaFor(kind,id){
+ return editorAssetMeta?.[kind]?.[id] || {ax:.5,ay:.5,mx:.5,my:.5,tx:.5,ty:.5};
+}
+function editorOverlayStyle(pos,meta,extraRot=0,extraScale=1){
+ const ax=meta?.ax ?? .5, ay=meta?.ay ?? .5;
+ const w=Number(pos?.w||10), h=Number(pos?.h||10), x=Number(pos?.x||50), y=Number(pos?.y||50);
+ const left=x-w*ax, top=y-h*ay, rot=Number(pos?.rot||0)+Number(extraRot||0), scale=Number(pos?.scale||1)*Number(extraScale||1);
+ return `left:${left}%;top:${top}%;width:${w}%;height:${h}%;--layout-ax:${ax*100}%;--layout-ay:${ay*100}%;--layout-rot:${rot}deg;--layout-scale:${scale};`;
+}
+function editorFishingMetaKey(type,id){
+ const key=(fishingVisualKey[type]||{})[id]||id;
+ return key;
+}
+
 function visualImg(src,alt="",cls="assetSprite"){
  return `<img class="${cls}" src="${src}" alt="${alt}" loading="lazy" draggable="false">`;
 }
@@ -661,9 +679,16 @@ function switchMode(m){
 function battleShipComposite(shipLevel,weaponLoadout,equipmentLoadout,enemy=false){
  const mk=Math.max(1,Math.min(4,shipLevel||1)),layout=shipLayoutForLevel(mk),assetSet=enemy?enemyVisualAssets:visualAssets;
  let out=`<div class="battleShipComposite ${enemy?"enemyComposite":"playerComposite"}">${visualImg(assetSet.ships[mk],"","battleHullSprite")}`;
- (equipmentLoadout||[]).forEach((inst,i)=>{const pos=layout.equips[i],src=assetSet.equipments[inst.id]||visualAssets.equipments[inst.id];if(pos&&src){const x=pos.x,y=enemy?100-pos.y:pos.y;out+=`<img class="battleOverlay battleEquip equip-slot-${i+1}" data-part-group="equipment" data-slot="${i+1}" src="${src}" style="left:${x}%;top:${y}%;width:${pos.w}%;height:${pos.h}%" alt="">`}});
- (weaponLoadout||[]).forEach((inst,i)=>{const pos=layout.weapons[i],src=assetSet.weapons[inst.id]||visualAssets.weapons[inst.id];if(pos&&src){const x=pos.x,y=enemy?100-pos.y:pos.y;const group=(inst.side||pos.side||"left")==="right"?"rightWeapon":"leftWeapon";out+=`<img class="battleOverlay battleWeapon weapon-slot-${i+1}" data-part-group="${group}" data-slot="${i+1}" data-weapon-id="${inst.id}" src="${src}" style="left:${x}%;top:${y}%;width:${pos.w}%;height:${pos.h}%" alt="">`}});
- if(enemy)out+=`<div class="enemyLaserTurret" data-part-group="laser"><i></i><i></i><span></span></div>`;return out+`</div>`;
+ (equipmentLoadout||[]).forEach((inst,i)=>{
+   const pos=layout.equips[i],src=assetSet.equipments[inst.id]||visualAssets.equipments[inst.id];
+   if(pos&&src){const meta=editorMetaFor("equipments",inst.id);out+=`<img class="battleOverlay battleEquip layoutDriven equip-slot-${i+1}" data-part-group="equipment" data-slot="${i+1}" src="${src}" style="${editorOverlayStyle(pos,meta)}" alt="">`;}
+ });
+ (weaponLoadout||[]).forEach((inst,i)=>{
+   const pos=layout.weapons[i],src=assetSet.weapons[inst.id]||visualAssets.weapons[inst.id];
+   if(pos&&src){const meta=editorMetaFor("weapons",inst.id);const group=(inst.side||pos.side||"left")==="right"?"rightWeapon":"leftWeapon";out+=`<img class="battleOverlay battleWeapon layoutDriven weapon-slot-${i+1}" data-part-group="${group}" data-slot="${i+1}" data-weapon-id="${inst.id}" src="${src}" style="${editorOverlayStyle(pos,meta)}" alt="">`;}
+ });
+ if(enemy)out+=`<div class="enemyLaserTurret" data-part-group="laser"><i></i><i></i><span></span></div>`;
+ return out+`</div>`;
 }
 function renderBattleShips(){
  const e=run.enemy;if(!e)return;
@@ -1314,78 +1339,25 @@ function loadPanelHTML(){
   return `<div><div class="statRow"><span>過負荷ゲージ</span><strong>${getLoad()} / ${run.maxLoad}</strong></div><div class="loadMeterBar"><div style="width:${ratio*100}%"></div></div><div class="statRow" style="margin-top:8px"><span>武器 / 装備 / 倉庫</span><strong>${run.weapons.length}/${run.weaponSlots} ・ ${run.equipments.length}/${run.equipSlots} ・ ${run.storage.length}/${run.storageCap}</strong></div></div>`;
 }
 function shipLayoutForLevel(lv){
-  const layouts={
-    1:{
-      weapons:[
-        {x:23,y:35,w:34,h:22,side:"left"},
-        {x:82,y:35,w:34,h:22,side:"right"}
-      ],
-      equips:[
-        {x:50,y:31,w:25,h:19},
-        {x:50,y:58,w:24,h:18}
-      ]
-    },
-    2:{
-      weapons:[
-        {x:17,y:35,w:32,h:21,side:"left"},
-        {x:83,y:35,w:32,h:21,side:"right"},
-        {x:50,y:56,w:30,h:19,side:"center"}
-      ],
-      equips:[
-        {x:50,y:26,w:26,h:19},
-        {x:36,y:68,w:23,h:18},
-        {x:64,y:68,w:23,h:18}
-      ]
-    },
-    3:{
-      weapons:[
-        {x:16,y:31,w:30,h:20,side:"left"},
-        {x:84,y:31,w:30,h:20,side:"right"},
-        {x:16,y:60,w:30,h:20,side:"left"},
-        {x:84,y:60,w:30,h:20,side:"right"}
-      ],
-      equips:[
-        {x:50,y:22,w:24,h:18},
-        {x:39,y:50,w:22,h:17},
-        {x:61,y:50,w:22,h:17},
-        {x:50,y:73,w:22,h:17}
-      ]
-    },
-    4:{
-      weapons:[
-        {x:15,y:30,w:29,h:19,side:"left"},
-        {x:85,y:30,w:29,h:19,side:"right"},
-        {x:15,y:62,w:29,h:19,side:"left"},
-        {x:85,y:62,w:29,h:19,side:"right"}
-      ],
-      equips:[
-        {x:37,y:27,w:21,h:17},
-        {x:63,y:27,w:21,h:17},
-        {x:50,y:55,w:21,h:17},
-        {x:37,y:70,w:20,h:16},
-        {x:63,y:70,w:20,h:16}
-      ]
-    }
-  };
-  return layouts[Math.max(1,Math.min(4,lv||1))]||layouts[1];
+  return editorCanonicalShipLayouts[String(Math.max(1,Math.min(4,lv||1)))] || editorCanonicalShipLayouts["1"];
 }
 function renderShipComposite(){
   const lv=Math.max(1,Math.min(4,run.shipLevel||1));
   const layout=shipLayoutForLevel(lv);
   let out=`<div class="shipComposite">${visualImg(hullAsset(),`機体 Mk.${run.shipLevel}`,"shipHullSprite")}`;
   run.equipments.forEach((inst,i)=>{
-    const pos=layout.equips[i];
-    const src=visualAssets.equipments[inst?.id];
-    if(!pos||!src) return;
-    out += `<img class="shipOverlaySprite shipEquipOverlay" src="${src}" alt="" style="left:${pos.x}%;top:${pos.y}%;width:${pos.w}%;height:${pos.h}%" draggable="false">`;
+    const pos=layout.equips[i], src=visualAssets.equipments[inst?.id];
+    if(!pos||!src)return;
+    const meta=editorMetaFor("equipments",inst.id);
+    out+=`<img class="shipOverlaySprite shipEquipOverlay layoutDriven" src="${src}" alt="" style="${editorOverlayStyle(pos,meta)}" draggable="false">`;
   });
   run.weapons.forEach((inst,i)=>{
-    const pos=layout.weapons[i];
-    const src=visualAssets.weapons[inst?.id];
-    if(!pos||!src) return;
-    out += `<img class="shipOverlaySprite shipWeaponOverlay fixedWeaponRotation" src="${src}" alt="" style="left:${pos.x}%;top:${pos.y}%;width:${pos.w}%;height:${pos.h}%" draggable="false">`;
+    const pos=layout.weapons[i], src=visualAssets.weapons[inst?.id];
+    if(!pos||!src)return;
+    const meta=editorMetaFor("weapons",inst.id);
+    out+=`<img class="shipOverlaySprite shipWeaponOverlay layoutDriven" src="${src}" alt="" style="${editorOverlayStyle(pos,meta)}" draggable="false">`;
   });
-  out += `</div>`;
+  out+=`</div>`;
   return out;
 }
 function renderShipSchematic(){
@@ -1405,14 +1377,18 @@ function renderShipSchematic(){
 function renderFishingSchematic(){
   const hookName=(hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック");
   const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod",run.rod.rod],["reel","リール",run.rod.reel+"リール","gear-slot-reel",run.rod.reel],["line","ライン",run.rod.line+"ライン","gear-slot-line",run.rod.line],["hook","フック",hookName,"gear-slot-hook",run.rod.hook]];
+  const rigItem=(type,id,label)=>{
+    const p=editorFishingLayout[type], key=editorFishingMetaKey(type,id), meta=editorAssetMeta?.fishing?.[type]?.[key]||{ax:.5,ay:.5};
+    if(!p)return "";
+    const pos={x:p.x,y:p.y,w:p.w,h:p.h,rot:p.rotation||0,scale:p.scale||1};
+    return `<div class="rigLayoutItem rig-${type}" style="${editorOverlayStyle(pos,meta)}">${visualImg(fishingAsset(type,id),label,"rigLayoutAsset")}</div>`;
+  };
   return `<div class="maintPanel"><div class="gearBlueprint sideFishingView visualFishingRig">
-    <div class="fishingRigCanvas">
-      <div class="rigRodMain">${visualImg(fishingAsset("rod",run.rod.rod),run.rod.rod+"ロッド","rigRodAsset")}</div>
-      <div class="rigReelMain">${visualImg(fishingAsset("reel",run.rod.reel),run.rod.reel+"リール","rigReelAsset")}</div>
-      <div class="rigLineMain">${visualImg(fishingAsset("line",run.rod.line),run.rod.line+"ライン","rigLineAsset")}</div>
-      <div class="rigHookMain">${visualImg(fishingAsset("hook",run.rod.hook),hookName,"rigHookAsset")}</div>
-      <div class="rigLineThread"></div>
-      <div class="rigTipGlow"></div>
+    <div class="fishingRigCanvas editorFishingRig">
+      ${rigItem("rod",run.rod.rod,run.rod.rod+"ロッド")}
+      ${rigItem("reel",run.rod.reel,run.rod.reel+"リール")}
+      ${rigItem("line",run.rod.line,run.rod.line+"ライン")}
+      ${rigItem("hook",run.rod.hook,hookName)}
     </div>
     ${parts.map(([k,lbl,title,cls,id])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><span class="slotMiniIcon">${prettyItemIcon(k,id)}</span><span class="slotText"><small>${lbl}</small><strong>${title}</strong></span></button>`).join("")}
   </div></div>`;
