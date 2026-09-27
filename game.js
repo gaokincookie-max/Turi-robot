@@ -695,13 +695,12 @@ function layoutElementStyle(el,meta,opts={}){
  const z=Number(opts.z ?? el?.z ?? 1), opacity=Number(opts.opacity ?? el?.opacity ?? 1);
  return `left:${left}%;top:${top}%;width:${w}%;height:${h}%;z-index:${z};opacity:${opacity};--layout-ax:${ax*100}%;--layout-ay:${ay*100}%;--layout-rot:${rot}deg;--layout-scale-x:${scale*flipX};--layout-scale-y:${scale*flipY};`;
 }
-// ===== v20: editor-canonical ship renderer =====
-// The editor's maintenance scene is the single source of truth for ship assembly.
-// Its coordinates are interpreted in the same 9:16 virtual canvas used by the editor,
-// then the completed assembly is scaled uniformly into maintenance/battle frames.
+// ===== v21: shared editor renderer =====
+// Layout DATA stays scene-specific and comes directly from the editor:
+//   maint_ship / battle_player / battle_enemy.
+// Only the rendering/coordinate interpretation is shared with the game.
 const EDITOR_VIRTUAL_W = 900;
 const EDITOR_VIRTUAL_H = 1600;
-const EDITOR_SHIP_VIEWBOX = { x:135, y:400, w:630, h:720 }; // 15..85% X, 25..70% Y
 function escAttr(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function svgElementGeometry(el,meta={ax:.5,ay:.5}){
  const ax=Number(meta?.ax ?? .5), ay=Number(meta?.ay ?? .5);
@@ -710,33 +709,65 @@ function svgElementGeometry(el,meta={ax:.5,ay:.5}){
  const scale=Number(el?.scale??1), rot=Number(el?.rotation??el?.rot??0);
  const fx=el?.flipX?-1:1, fy=el?.flipY?-1:1;
  const left=x-w*ax, top=y-h*ay;
- // Rotate/scale around exactly the same anchor point as the editor preview.
+ // Same model as the editor: element x/y is the processed asset anchor,
+ // then rotation/flip happens around that exact point. Scale is applied around it too.
  const transform=`translate(${x} ${y}) rotate(${rot}) scale(${scale*fx} ${scale*fy}) translate(${-x} ${-y})`;
- return {x,y,w,h,left,top,transform};
+ return {x,y,w,h,left,top,transform,ax,ay,scale,rot,fx,fy};
+}
+function transformedElementBounds(el,meta={ax:.5,ay:.5}){
+ const g=svgElementGeometry(el,meta), rad=g.rot*Math.PI/180, c=Math.cos(rad), sn=Math.sin(rad);
+ const corners=[[g.left,g.top],[g.left+g.w,g.top],[g.left+g.w,g.top+g.h],[g.left,g.top+g.h]];
+ const pts=corners.map(([px,py])=>{
+   let dx=(px-g.x)*g.scale*g.fx, dy=(py-g.y)*g.scale*g.fy;
+   return [g.x+dx*c-dy*sn, g.y+dx*sn+dy*c];
+ });
+ return {minX:Math.min(...pts.map(p=>p[0])),maxX:Math.max(...pts.map(p=>p[0])),minY:Math.min(...pts.map(p=>p[1])),maxY:Math.max(...pts.map(p=>p[1]))};
 }
 function svgImage(src,el,meta,classes='',attrs=''){
  if(!src||!el||el.visible===false)return '';
  const g=svgElementGeometry(el,meta);
  return `<image class="${classes}" href="${escAttr(src)}" x="${g.left}" y="${g.top}" width="${g.w}" height="${g.h}" preserveAspectRatio="xMidYMid meet" opacity="${Number(el.opacity??1)}" transform="${g.transform}" ${attrs}/>`;
 }
-function canonicalShipElements(shipLevel){
+function editorShipElements(sceneName,shipLevel){
  const mk=Math.max(1,Math.min(4,shipLevel||1));
- return [...editorSceneVariant('maint_ship',mk)].filter(el=>el?.visible!==false).sort((a,b)=>(a?.z||0)-(b?.z||0));
+ return [...editorSceneVariant(sceneName,mk)].filter(el=>el?.visible!==false).sort((a,b)=>(a?.z||0)-(b?.z||0));
 }
-function renderCanonicalShipSvg(shipLevel,weaponLoadout,equipmentLoadout,{enemy=false,battle=false}={}){
+function sceneElementMeta(el){
+ if(/^weapon\d+$/.test(el?.key||'')){
+   // The slot's assetId is the editor placeholder; use it only to determine the editor anchor.
+   const idMap={w_pulse:'pulse',w_twin:'bolt',w_laser:'laser',w_missile:'missile',w_emp:'emp',w_barrier:'barrier',w_scatter:'scatter',w_piercer:'piercer'};
+   return editorMetaFor('weapons',idMap[el.assetId]||el.assetId);
+ }
+ if(/^equip\d+$/.test(el?.key||''))return {ax:.5,ay:.5};
+ return {ax:.5,ay:.5};
+}
+function sceneViewBox(sceneName,shipLevel){
+ // Compute from the complete editor scene, not the currently equipped items.
+ // This prevents the ship from shifting when a slot is empty or changed.
+ const elems=editorShipElements(sceneName,shipLevel).filter(el=>el.key!=='laser');
+ if(!elems.length)return {x:0,y:0,w:EDITOR_VIRTUAL_W,h:EDITOR_VIRTUAL_H};
+ const bs=elems.map(el=>transformedElementBounds(el,sceneElementMeta(el)));
+ let minX=Math.min(...bs.map(b=>b.minX)), maxX=Math.max(...bs.map(b=>b.maxX));
+ let minY=Math.min(...bs.map(b=>b.minY)), maxY=Math.max(...bs.map(b=>b.maxY));
+ const rawW=Math.max(1,maxX-minX), rawH=Math.max(1,maxY-minY);
+ const padX=Math.max(28,rawW*.08), padY=Math.max(28,rawH*.08);
+ return {x:minX-padX,y:minY-padY,w:rawW+padX*2,h:rawH+padY*2};
+}
+function renderEditorShipSvg(sceneName,shipLevel,weaponLoadout,equipmentLoadout,{enemy=false,battle=false}={}){
  const mk=Math.max(1,Math.min(4,shipLevel||1));
- const elements=canonicalShipElements(mk), assetSet=enemy?enemyVisualAssets:visualAssets;
+ const elements=editorShipElements(sceneName,mk), assetSet=enemy?enemyVisualAssets:visualAssets;
  let body='';
  elements.forEach(el=>{
    if(el.key==='ship'){
      const src=assetSet.ships[mk] || visualAssets.ships[mk];
-     body+=svgImage(src,el,{ax:.5,ay:.5}, battle?'battleHullSprite layoutSceneHull':'shipHullSprite layoutSceneHull');
+     body+=svgImage(src,el,{ax:.5,ay:.5},battle?'battleHullSprite layoutSceneHull':'shipHullSprite layoutSceneHull');
      return;
    }
    if(/^weapon\d+$/.test(el.key)){
      const idx=Math.max(0,parseInt(el.key.replace('weapon',''),10)-1), inst=weaponLoadout?.[idx];
      if(!inst)return;
      const src=assetSet.weapons[inst.id] || visualAssets.weapons[inst.id]; if(!src)return;
+     // IMPORTANT: anchor belongs to the actual equipped asset, while x/y/rotation belong to this editor scene.
      const meta=editorMetaFor('weapons',inst.id), side=inst.side || shipWeaponSideForSlot(mk,idx), group=(side==='right'?'rightWeapon':'leftWeapon');
      const cls=battle?'battleOverlay battleWeapon layoutDriven':'shipOverlaySprite shipWeaponOverlay layoutDriven';
      body+=svgImage(src,el,meta,cls,`data-part-group="${group}" data-slot="${idx+1}" data-weapon-id="${escAttr(inst.id)}"`);
@@ -750,20 +781,19 @@ function renderCanonicalShipSvg(shipLevel,weaponLoadout,equipmentLoadout,{enemy=
      body+=svgImage(src,el,meta,cls,`data-part-group="equipment" data-slot="${idx+1}"`);
    }
  });
- const v=EDITOR_SHIP_VIEWBOX;
- const enemyClass=enemy?' enemyCanonical':'';
- return `<svg class="canonicalShipSvg${enemyClass}" viewBox="${v.x} ${v.y} ${v.w} ${v.h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${body}</svg>`;
+ const v=sceneViewBox(sceneName,mk);
+ return `<svg class="canonicalShipSvg" viewBox="${v.x} ${v.y} ${v.w} ${v.h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${body}</svg>`;
 }
-// Compatibility wrapper: ship assembly always comes from maint_ship now.
 function renderShipScene(sceneName, shipLevel, weaponLoadout, equipmentLoadout, enemy=false){
  const battle=sceneName==='battle_player'||sceneName==='battle_enemy';
- return renderCanonicalShipSvg(shipLevel,weaponLoadout,equipmentLoadout,{enemy,battle});
+ return renderEditorShipSvg(sceneName,shipLevel,weaponLoadout,equipmentLoadout,{enemy,battle});
 }
 function battleShipComposite(shipLevel,weaponLoadout,equipmentLoadout,enemy=false){
  const mk=Math.max(1,Math.min(4,shipLevel||1));
- // Enemy-specific laser remains a battle-only system; hull/weapons/equipment use canonical editor assembly.
+ const sceneName=enemy?'battle_enemy':'battle_player';
+ // Enemy laser remains its gameplay-specific DOM element for targeting/charge effects.
  const laser=enemy?`<div class="enemyLaserTurret" data-part-group="laser" aria-hidden="true"></div>`:'';
- return `<div class="battleShipComposite editorSceneStage ${enemy?"enemyComposite":"playerComposite"}">${renderCanonicalShipSvg(mk,weaponLoadout,equipmentLoadout,{enemy,battle:true})}${laser}</div>`;
+ return `<div class="battleShipComposite editorSceneStage ${enemy?'enemyComposite':'playerComposite'}">${renderEditorShipSvg(sceneName,mk,weaponLoadout,equipmentLoadout,{enemy,battle:true})}${laser}</div>`;
 }
 function renderBattleShips(){
  const e=run.enemy;if(!e)return;
@@ -1418,7 +1448,7 @@ function shipLayoutForLevel(lv){
 }
 function renderShipComposite(){
   const lv=Math.max(1,Math.min(4,run.shipLevel||1));
-  return `<div class="shipComposite editorSceneStage">${renderCanonicalShipSvg(lv,run.weapons,run.equipments,{enemy:false,battle:false})}</div>`;
+  return `<div class="shipComposite editorSceneStage">${renderEditorShipSvg('maint_ship',lv,run.weapons,run.equipments,{enemy:false,battle:false})}</div>`;
 }
 function renderShipSchematic(){
   let left='', right='';

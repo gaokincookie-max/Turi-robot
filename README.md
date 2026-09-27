@@ -145,3 +145,11 @@ The ship assembly drawn in the layout editor's `maint_ship` scene is now the sin
 - The enemy-only laser remains a battle-specific overlay because it is not part of the maintenance ship assembly.
 
 This removes the previous double/triple source-of-truth problem and makes future editor adjustments authoritative for the game ship layout.
+
+
+## v21 scene-specific editor integration
+- The editor remains authoritative, but layouts are no longer collapsed into `maint_ship`.
+- Maintenance uses `maint_ship`, player battle uses `battle_player`, enemy battle uses `battle_enemy`.
+- All three scenes share one coordinate/anchor/rotation renderer.
+- Removed the extra game-side 180-degree enemy rotation. Enemy orientation now comes from `battle_enemy`.
+- The ship component viewBox is derived from the full editor scene so slot changes do not recenter the ship.

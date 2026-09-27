@@ -1579,18 +1579,14 @@ button.danger{background:#442029;border-color:#7a3440}
 .rigLayoutItem{z-index:3;}
 .rigLayoutAsset{width:100%;height:100%;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 8px 12px rgba(0,0,0,.35));}
 
-/* ===== v20 editor-canonical ship renderer ===== */
+/* ===== v21 shared editor renderer ===== */
 .canonicalShipSvg{
   display:block;
   width:100%;
   height:100%;
   overflow:visible;
 }
-/* The whole completed enemy ship is rotated, rather than rotating each child independently. */
-.enemyComposite .canonicalShipSvg.enemyCanonical{
-  transform:rotate(180deg);
-  transform-origin:50% 50%;
-}
+/* Enemy orientation comes from the editor battle_enemy scene; do not add game-side rotation. */
 /* SVG images already carry editor-equivalent transforms. Suppress legacy per-element CSS transforms. */
 .canonicalShipSvg .layoutSceneHull,
 .canonicalShipSvg .layoutDriven{
