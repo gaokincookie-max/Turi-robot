@@ -741,17 +741,27 @@ function sceneElementMeta(el){
  if(/^equip\d+$/.test(el?.key||''))return {ax:.5,ay:.5};
  return {ax:.5,ay:.5};
 }
+const EDITOR_SCENE_CAMERA={
+ // Fixed scene cameras in editor-percent space.
+ // These preserve the editor composition better than content-tight auto-cropping.
+ maint_ship:{x:16,y:20,w:68,h:56},
+ battle_player:{x:16,y:46,w:68,h:44},
+ battle_enemy:{x:16,y:8,w:68,h:44},
+ // Fishing rig is already authored as a centered whole-scene composition.
+ maint_fishing:{x:16,y:22,w:68,h:56}
+};
 function sceneViewBox(sceneName,shipLevel){
- // Compute from the complete editor scene, not the currently equipped items.
- // This prevents the ship from shifting when a slot is empty or changed.
- const elems=editorShipElements(sceneName,shipLevel).filter(el=>el.key!=='laser');
- if(!elems.length)return {x:0,y:0,w:EDITOR_VIRTUAL_W,h:EDITOR_VIRTUAL_H};
- const bs=elems.map(el=>transformedElementBounds(el,sceneElementMeta(el)));
- let minX=Math.min(...bs.map(b=>b.minX)), maxX=Math.max(...bs.map(b=>b.maxX));
- let minY=Math.min(...bs.map(b=>b.minY)), maxY=Math.max(...bs.map(b=>b.maxY));
- const rawW=Math.max(1,maxX-minX), rawH=Math.max(1,maxY-minY);
- const padX=Math.max(28,rawW*.08), padY=Math.max(28,rawH*.08);
- return {x:minX-padX,y:minY-padY,w:rawW+padX*2,h:rawH+padY*2};
+ const cam=EDITOR_SCENE_CAMERA[sceneName];
+ if(cam){
+   return {
+     x:EDITOR_VIRTUAL_W*(cam.x/100),
+     y:EDITOR_VIRTUAL_H*(cam.y/100),
+     w:EDITOR_VIRTUAL_W*(cam.w/100),
+     h:EDITOR_VIRTUAL_H*(cam.h/100)
+   };
+ }
+ // Fallback only for unknown scenes.
+ return {x:0,y:0,w:EDITOR_VIRTUAL_W,h:EDITOR_VIRTUAL_H};
 }
 function renderEditorShipSvg(sceneName,shipLevel,weaponLoadout,equipmentLoadout,{enemy=false,battle=false}={}){
  const mk=Math.max(1,Math.min(4,shipLevel||1));
