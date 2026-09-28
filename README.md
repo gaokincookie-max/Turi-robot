@@ -159,3 +159,10 @@ This removes the previous double/triple source-of-truth problem and makes future
 - Mirrored those editor assets into enemy visual folders because `battle_enemy` in the supplied editor layout references the same editor assets.
 - Removed legacy CSS transform classes from SVG-rendered ship parts. Those CSS rules were overriding the SVG transform attributes, so editor rotations/anchor transforms were not actually being honored.
 - The editor scene data remains scene-specific: `maint_ship`, `battle_player`, and `battle_enemy`.
+
+## v24 editor-replica renderer
+- Restored `maint_ship`, `battle_player`, and `battle_enemy` directly from `void-angler-layout-v3 (1).json` without the later battle hull 48x24 -> 56x28 rewrite.
+- Removed the SVG auto-viewBox/camera path for ship rendering.
+- Ship rendering now mirrors the editor `renderLayoutPreview()` formula directly.
+- A true 9:16 internal preview stage is fitted into the game frame, preventing the game frame aspect ratio from changing element geometry.
+- Player ship/weapon/equipment PNGs are regenerated from each asset's original `_processed.value.url` in the source JSON.

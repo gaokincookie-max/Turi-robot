@@ -1623,3 +1623,46 @@ button.danger{background:#442029;border-color:#7a3440}
 .enemyComposite .canonicalShipSvg .battleWeapon.activePulse{animation:enemyPulseFilterV22 .34s ease-out;}
 @keyframes activePulseFilterV22{0%{filter:brightness(1.1)}50%{filter:brightness(1.9) saturate(1.35) drop-shadow(0 0 18px rgba(122,248,255,.8))}100%{filter:drop-shadow(0 4px 5px rgba(0,0,0,.42))}}
 @keyframes enemyPulseFilterV22{0%{filter:brightness(1.1)}50%{filter:brightness(1.9) saturate(1.35) drop-shadow(0 0 18px rgba(255,122,122,.8))}100%{filter:drop-shadow(0 4px 5px rgba(0,0,0,.42))}}
+
+/* ===== v24 literal editor preview renderer =====
+   A real 9:16 stage is fitted inside each game frame. All x/y/w/h values are
+   interpreted exactly like editor.js renderLayoutPreview(). */
+.editorReplicaViewport{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  pointer-events:none;
+}
+.editorReplicaCanvas{
+  position:relative;
+  height:100%;
+  width:auto;
+  aspect-ratio:9 / 16;
+  flex:0 0 auto;
+  overflow:visible;
+}
+.editorReplicaItem{
+  position:absolute;
+  user-select:none;
+  pointer-events:none;
+}
+.editorReplicaItem>img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  image-rendering:pixelated;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+.editorReplicaItem.editorShipHull>img{filter:drop-shadow(0 10px 16px rgba(0,0,0,.48));}
+.editorReplicaItem.editorShipPart>img{filter:drop-shadow(0 4px 5px rgba(0,0,0,.42));}
+.enemyComposite .editorReplicaItem.editorShipHull>img{filter:drop-shadow(0 10px 16px rgba(0,0,0,.48)) drop-shadow(0 0 8px rgba(255,93,122,.12));}
+.editorReplicaItem.battleWeapon.activePulse{animation:activePulseFilterV24 .34s ease-out;}
+.enemyComposite .editorReplicaItem.battleWeapon.activePulse{animation:enemyPulseFilterV24 .34s ease-out;}
+@keyframes activePulseFilterV24{0%{filter:brightness(1)}50%{filter:brightness(1.8) saturate(1.25)}100%{filter:none}}
+@keyframes enemyPulseFilterV24{0%{filter:brightness(1)}50%{filter:brightness(1.8) saturate(1.25)}100%{filter:none}}
