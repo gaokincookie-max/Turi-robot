@@ -749,7 +749,14 @@ function renderEditorReplica(sceneName,shipLevel,weaponLoadout,equipmentLoadout,
      body+=replicaItem(src,el,meta,battle?'editorShipPart battleEquipExact':'editorShipPart maintEquipExact',`data-part-group="equipment" data-slot="${idx+1}"`);
    }
  });
- return `<div class="editorReplicaViewport" data-editor-scene="${sceneName}"><div class="editorReplicaCanvas">${body}</div></div>`;
+ const camera={
+   maint_ship:{x:16,y:18,w:68},
+   battle_player:{x:16,y:59,w:68},
+   battle_enemy:{x:16,y:15,w:68}
+ }[sceneName] || {x:0,y:0,w:100};
+ const camScale=100/Number(camera.w||100);
+ const camStyle=`--editor-cam-scale:${camScale};--editor-cam-x:${Number(camera.x||0)}%;--editor-cam-y:${Number(camera.y||0)}%;`;
+ return `<div class="editorReplicaViewport" data-editor-scene="${sceneName}"><div class="editorReplicaCanvas" style="${camStyle}">${body}</div></div>`;
 }
 function renderShipScene(sceneName,shipLevel,weaponLoadout,equipmentLoadout,enemy=false){
  const battle=sceneName==='battle_player'||sceneName==='battle_enemy';
@@ -1437,7 +1444,7 @@ function fishingRigItemHTML(el,id,label){
 function renderFishingSchematic(){
   const hookName=(hookTypes.find(x=>x.id===run.rod.hook)?.name||"標準フック");
   const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod",run.rod.rod],["reel","リール",run.rod.reel+"リール","gear-slot-reel",run.rod.reel],["line","ライン",run.rod.line+"ライン","gear-slot-line",run.rod.line],["hook","フック",hookName,"gear-slot-hook",run.rod.hook]];
-  const elements=editorSceneLayouts.maint_fishing || [];
+  const elements=editorSceneVariant("maint_fishing","default");
   const byKey=Object.fromEntries(elements.map(el=>[el.key,el]));
   return `<div class="maintPanel"><div class="gearBlueprint sideFishingView visualFishingRig">
     <div class="editorRigStage"><div class="fishingRigCanvas editorFishingRig editorSceneStage">

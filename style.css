@@ -1637,12 +1637,17 @@ button.danger{background:#442029;border-color:#7a3440}
   pointer-events:none;
 }
 .editorReplicaCanvas{
-  position:relative;
-  height:100%;
-  width:auto;
+  position:absolute;
+  left:0;
+  top:0;
+  width:100%;
+  height:auto;
   aspect-ratio:9 / 16;
-  flex:0 0 auto;
   overflow:visible;
+  transform-origin:0 0;
+  /* Keep the literal 9:16 editor coordinate system, but crop/zoom it per scene
+     instead of shrinking the entire phone canvas into the game frame. */
+  transform:scale(var(--editor-cam-scale,1)) translate(calc(-1 * var(--editor-cam-x,0%)),calc(-1 * var(--editor-cam-y,0%)));
 }
 .editorReplicaItem{
   position:absolute;
