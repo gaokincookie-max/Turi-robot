@@ -1810,7 +1810,7 @@ function renderEditorReplica(sceneName,shipLevel,weaponLoadout,equipmentLoadout,
      body+=`<div class="enemyLaserTurret v4LayoutItem v4LaserItem" data-v4-key="laser" data-v4-asset="w_laser" data-part-group="laser" aria-hidden="true"></div>`;
    }
  }
- return `<div class="v4LayoutView" data-v4-scene="${sceneName}" data-v4-variant="${mk}"><div class="v4CameraFrame"><div class="v4World">${body}</div></div></div>`;
+ return `<div class="v4LayoutView" data-v4-scene="${sceneName}" data-v4-variant="${mk}"><div class="v4World">${body}</div></div>`;
 }
 function battleShipComposite(shipLevel,weaponLoadout,equipmentLoadout,enemy=false){
  const mk=Math.max(1,Math.min(4,Number(shipLevel)||1)), sceneName=enemy?'battle_enemy':'battle_player';
@@ -1823,7 +1823,7 @@ function v4FishingView(){
  const labels={rod:run.rod.rod+'ロッド',reel:run.rod.reel+'リール',line:run.rod.line+'ライン',hook:hookName};
  let body='';
  for(const el of els){ const type=el.key,id=vals[type]; if(!id)continue; const aid=v4FishingAssetId(type,id),src=fishingAsset(type,id); body+=v4ItemHTML(el,src,aid,`rig-${type}`,`data-rig-type="${type}"`); }
- return `<div class="v4LayoutView" data-v4-scene="maint_fishing" data-v4-variant="default"><div class="v4CameraFrame"><div class="v4World">${body}</div></div></div>`;
+ return `<div class="v4LayoutView" data-v4-scene="maint_fishing" data-v4-variant="default"><div class="v4World">${body}</div></div>`;
 }
 function renderFishingSchematic(){
  const hookName=(hookTypes.find(x=>x.id===run.rod.hook)?.name||'標準フック');
@@ -1850,38 +1850,55 @@ function syncV4LayoutViews(root=document){
  if(!V4_LAYOUT)return;
  root.querySelectorAll('.v4LayoutView').forEach(view=>{
    const scene=view.dataset.v4Scene, variant=view.dataset.v4Variant, cam=v4Camera(scene,variant);
-   const camPx={x:V4_BASE_W*Number(cam.x)/100,y:V4_BASE_H*Number(cam.y)/100,width:V4_BASE_W*Number(cam.w)/100,height:V4_BASE_H*Number(cam.h)/100};
+   const camPx={
+     x:V4_BASE_W*Number(cam.x)/100,
+     y:V4_BASE_H*Number(cam.y)/100,
+     width:V4_BASE_W*Number(cam.w)/100,
+     height:V4_BASE_H*Number(cam.h)/100
+   };
    if(camPx.width<=0||camPx.height<=0)return;
-   // Match the game's visible frame to the exact Editor Game View aspect ratio.
-   // v26 preserved the camera internally but placed it inside older, wider game boxes,
-   // which forced an extra contain-scale and made everything look too small.
+
+   // Make the actual game host use exactly the exported Editor Game View aspect ratio.
    const cameraAspect=camPx.width/camPx.height;
-   if(scene==='maint_ship'){
-     const frame=view.closest('.shipVisualFrame');
-     if(frame){ frame.style.height='auto'; frame.style.aspectRatio=String(cameraAspect); }
-   }else if(scene==='battle_player'){
-     const frame=view.closest('.battlePlayerV2');
-     if(frame){ frame.style.height='auto'; frame.style.aspectRatio=String(cameraAspect); }
-   }else if(scene==='battle_enemy'){
-     const frame=view.closest('.battleShipStage');
-     if(frame){ frame.style.height='auto'; frame.style.aspectRatio=String(cameraAspect); }
+   let visualHost=null;
+   if(scene==='maint_ship') visualHost=view.closest('.shipVisualFrame');
+   else if(scene==='battle_player') visualHost=view.closest('.battlePlayerV2');
+   else if(scene==='battle_enemy') visualHost=view.closest('.battleShipStage');
+   if(visualHost){
+     visualHost.style.height='auto';
+     visualHost.style.aspectRatio=String(cameraAspect);
    }
-   const host=view.getBoundingClientRect(); if(host.width<1||host.height<1)return;
-   if(camPx.width<=0||camPx.height<=0)return;
-   const scale=Math.min(host.width/camPx.width,host.height/camPx.height);
+
+   // This is intentionally the same camera math as Editor v4.1 renderGameViewPreview().
+   // No intermediate camera frame, no auto crop, no recentering from content bounds.
+   const hr=view.getBoundingClientRect();
+   if(hr.width<1||hr.height<1)return;
+   const scale=Math.min(hr.width/camPx.width,hr.height/camPx.height);
    const shownW=camPx.width*scale, shownH=camPx.height*scale;
-   const frame=view.querySelector('.v4CameraFrame'), world=view.querySelector('.v4World'); if(!frame||!world)return;
-   Object.assign(frame.style,{width:`${shownW}px`,height:`${shownH}px`,left:`${(host.width-shownW)/2}px`,top:`${(host.height-shownH)/2}px`});
+   const centerX=(hr.width-shownW)/2, centerY=(hr.height-shownH)/2;
    const worldW=V4_BASE_W*scale, worldH=V4_BASE_H*scale;
-   Object.assign(world.style,{width:`${worldW}px`,height:`${worldH}px`,left:`${-camPx.x*scale}px`,top:`${-camPx.y*scale}px`});
+   const world=view.querySelector('.v4World'); if(!world)return;
+   Object.assign(world.style,{
+     width:`${worldW}px`,
+     height:`${worldH}px`,
+     left:`${centerX-camPx.x*scale}px`,
+     top:`${centerY-camPx.y*scale}px`
+   });
+
    const els=editorSceneVariant(scene,variant), byKey=Object.fromEntries(els.map(el=>[el.key,el]));
    world.querySelectorAll('.v4LayoutItem').forEach(node=>{
      const el=byKey[node.dataset.v4Key]; if(!el)return;
      const meta=v4AssetMeta(node.dataset.v4Asset||el.assetId), g=v4Geometry(el,meta,worldW,worldH);
-     Object.assign(node.style,{left:`${g.leftPx}px`,top:`${g.topPx}px`,width:`${g.wPx}px`,height:`${g.hPx}px`,zIndex:String(Number(el.z||1)),opacity:String(Number(el.opacity??1)),transformOrigin:`${g.ax*100}% ${g.ay*100}%`,transform:`rotate(${Number(el.rotation)||0}deg) scale(${el.flipX?-1:1},${el.flipY?-1:1})`});
+     Object.assign(node.style,{
+       left:`${g.leftPx}px`,top:`${g.topPx}px`,width:`${g.wPx}px`,height:`${g.hPx}px`,
+       zIndex:String(Number(el.z||1)),opacity:String(Number(el.opacity??1)),
+       transformOrigin:`${g.ax*100}% ${g.ay*100}%`,
+       transform:`rotate(${Number(el.rotation)||0}deg) scale(${el.flipX?-1:1},${el.flipY?-1:1})`
+     });
    });
  });
 }
+
 let v4SyncPending=false;
 function scheduleV4Sync(){ if(v4SyncPending)return; v4SyncPending=true; requestAnimationFrame(()=>{v4SyncPending=false;syncV4LayoutViews();}); }
 window.addEventListener('resize',scheduleV4Sync);

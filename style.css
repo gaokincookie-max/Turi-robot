@@ -1692,3 +1692,10 @@ button.danger{background:#442029;border-color:#7a3440}
 /* Fishing remains in its wide equipment UI, but give the central composition more room. */
 .v4RigHost{width:min(100%,420px);height:300px;}
 @media(max-width:560px){.v4RigHost{width:min(100%,340px);height:260px;}}
+
+/* ===== v28: literal Editor v4.1 Game View camera =====
+   The v4 world is positioned directly inside the visible host, exactly like
+   Editor v4.1 renderGameViewPreview(). */
+.v4LayoutView{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.v4LayoutView>.v4World{position:absolute;overflow:visible;transform:none!important;}
+.shipVisualFrame:has(.v4LayoutView){padding:0!important;}
