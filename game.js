@@ -1850,16 +1850,10 @@ function syncV4LayoutViews(root=document){
  if(!V4_LAYOUT)return;
  root.querySelectorAll('.v4LayoutView').forEach(view=>{
    const scene=view.dataset.v4Scene, variant=view.dataset.v4Variant, cam=v4Camera(scene,variant);
-   const camPx={
-     x:V4_BASE_W*Number(cam.x)/100,
-     y:V4_BASE_H*Number(cam.y)/100,
-     width:V4_BASE_W*Number(cam.w)/100,
-     height:V4_BASE_H*Number(cam.h)/100
-   };
-   if(camPx.width<=0||camPx.height<=0)return;
+   const cx=Number(cam.x||0), cy=Number(cam.y||0), cw=Math.max(.001,Number(cam.w||100)), ch=Math.max(.001,Number(cam.h||100));
 
-   // Make the actual game host use exactly the exported Editor Game View aspect ratio.
-   const cameraAspect=camPx.width/camPx.height;
+   // Match the game host itself to the physical aspect ratio of the exported Game View.
+   const cameraAspect=(V4_BASE_W*(cw/100))/(V4_BASE_H*(ch/100));
    let visualHost=null;
    if(scene==='maint_ship') visualHost=view.closest('.shipVisualFrame');
    else if(scene==='battle_player') visualHost=view.closest('.battlePlayerV2');
@@ -1869,31 +1863,40 @@ function syncV4LayoutViews(root=document){
      visualHost.style.aspectRatio=String(cameraAspect);
    }
 
-   // This is intentionally the same camera math as Editor v4.1 renderGameViewPreview().
-   // No intermediate camera frame, no auto crop, no recentering from content bounds.
-   const hr=view.getBoundingClientRect();
-   if(hr.width<1||hr.height<1)return;
-   const scale=Math.min(hr.width/camPx.width,hr.height/camPx.height);
-   const shownW=camPx.width*scale, shownH=camPx.height*scale;
-   const centerX=(hr.width-shownW)/2, centerY=(hr.height-shownH)/2;
-   const worldW=V4_BASE_W*scale, worldH=V4_BASE_H*scale;
+   // v29: direct percentage camera transform.
+   // No getBoundingClientRect(), no pixel-size dependent world, no auto-fit.
+   // The camera rectangle itself becomes 100% of the host.
    const world=view.querySelector('.v4World'); if(!world)return;
    Object.assign(world.style,{
-     width:`${worldW}px`,
-     height:`${worldH}px`,
-     left:`${centerX-camPx.x*scale}px`,
-     top:`${centerY-camPx.y*scale}px`
+     width:`${10000/cw}%`,
+     height:`${10000/ch}%`,
+     left:`${-(cx/cw)*100}%`,
+     top:`${-(cy/ch)*100}%`
    });
 
    const els=editorSceneVariant(scene,variant), byKey=Object.fromEntries(els.map(el=>[el.key,el]));
    world.querySelectorAll('.v4LayoutItem').forEach(node=>{
      const el=byKey[node.dataset.v4Key]; if(!el)return;
-     const meta=v4AssetMeta(node.dataset.v4Asset||el.assetId), g=v4Geometry(el,meta,worldW,worldH);
+     const meta=v4AssetMeta(node.dataset.v4Asset||el.assetId);
+     const scale=Number(el.scale||1), w=Number(el.w||10)*scale, h=Number(el.h||10)*scale;
+     const ax=meta.ax, ay=meta.ay, mx=meta.mx, my=meta.my;
+     const mode=el.placementMode==='mount'?'mount':'anchor';
+     const qx=(mode==='mount'?mx:ax)*w, qy=(mode==='mount'?my:ay)*h;
+     const apx=ax*w, apy=ay*h;
+     const rot=(Number(el.rotation)||0)*Math.PI/180, fx=el.flipX?-1:1, fy=el.flipY?-1:1;
+     // Mount-to-anchor correction in scene-percent units. X and Y stay in their own percent axes,
+     // exactly as the editor's rectangular scene canvas does.
+     const dx=(qx-apx)*fx, dy=(qy-apy)*fy;
+     // Convert the rotated vector through the physical scene aspect, then back to percent axes.
+     const physDx=dx*V4_BASE_W/100, physDy=dy*V4_BASE_H/100;
+     const rPhysX=physDx*Math.cos(rot)-physDy*Math.sin(rot), rPhysY=physDx*Math.sin(rot)+physDy*Math.cos(rot);
+     const rdx=rPhysX/(V4_BASE_W/100), rdy=rPhysY/(V4_BASE_H/100);
+     const left=Number(el.x||0)-apx-rdx, top=Number(el.y||0)-apy-rdy;
      Object.assign(node.style,{
-       left:`${g.leftPx}px`,top:`${g.topPx}px`,width:`${g.wPx}px`,height:`${g.hPx}px`,
+       left:`${left}%`,top:`${top}%`,width:`${w}%`,height:`${h}%`,
        zIndex:String(Number(el.z||1)),opacity:String(Number(el.opacity??1)),
-       transformOrigin:`${g.ax*100}% ${g.ay*100}%`,
-       transform:`rotate(${Number(el.rotation)||0}deg) scale(${el.flipX?-1:1},${el.flipY?-1:1})`
+       transformOrigin:`${ax*100}% ${ay*100}%`,
+       transform:`rotate(${Number(el.rotation)||0}deg) scale(${fx},${fy})`
      });
    });
  });
