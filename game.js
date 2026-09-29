@@ -1850,8 +1850,23 @@ function syncV4LayoutViews(root=document){
  if(!V4_LAYOUT)return;
  root.querySelectorAll('.v4LayoutView').forEach(view=>{
    const scene=view.dataset.v4Scene, variant=view.dataset.v4Variant, cam=v4Camera(scene,variant);
-   const host=view.getBoundingClientRect(); if(host.width<1||host.height<1)return;
    const camPx={x:V4_BASE_W*Number(cam.x)/100,y:V4_BASE_H*Number(cam.y)/100,width:V4_BASE_W*Number(cam.w)/100,height:V4_BASE_H*Number(cam.h)/100};
+   if(camPx.width<=0||camPx.height<=0)return;
+   // Match the game's visible frame to the exact Editor Game View aspect ratio.
+   // v26 preserved the camera internally but placed it inside older, wider game boxes,
+   // which forced an extra contain-scale and made everything look too small.
+   const cameraAspect=camPx.width/camPx.height;
+   if(scene==='maint_ship'){
+     const frame=view.closest('.shipVisualFrame');
+     if(frame){ frame.style.height='auto'; frame.style.aspectRatio=String(cameraAspect); }
+   }else if(scene==='battle_player'){
+     const frame=view.closest('.battlePlayerV2');
+     if(frame){ frame.style.height='auto'; frame.style.aspectRatio=String(cameraAspect); }
+   }else if(scene==='battle_enemy'){
+     const frame=view.closest('.battleShipStage');
+     if(frame){ frame.style.height='auto'; frame.style.aspectRatio=String(cameraAspect); }
+   }
+   const host=view.getBoundingClientRect(); if(host.width<1||host.height<1)return;
    if(camPx.width<=0||camPx.height<=0)return;
    const scale=Math.min(host.width/camPx.width,host.height/camPx.height);
    const shownW=camPx.width*scale, shownH=camPx.height*scale;

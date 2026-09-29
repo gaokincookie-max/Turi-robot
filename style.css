@@ -1683,3 +1683,12 @@ button.danger{background:#442029;border-color:#7a3440}
 .enemyComposite .v4LayoutItem.editorShipHull>img{filter:drop-shadow(0 10px 16px rgba(0,0,0,.48)) drop-shadow(0 0 8px rgba(255,93,122,.12));}
 .v4LaserItem{margin:0!important;inset:auto!important;}
 .v4RigHost{position:relative;overflow:hidden;}
+
+/* ===== v27: camera-native game frames =====
+   Ship/battle frame aspect ratios are assigned from the exported v4 Game View camera in JS.
+   This removes the extra contain shrink caused by legacy fixed-height boxes. */
+.shipVisualFrame:has(.v4LayoutView){max-height:none;}
+.battleShipStage:has(.v4LayoutView),.battlePlayerV2:has(.v4LayoutView){max-height:none;}
+/* Fishing remains in its wide equipment UI, but give the central composition more room. */
+.v4RigHost{width:min(100%,420px);height:300px;}
+@media(max-width:560px){.v4RigHost{width:min(100%,340px);height:260px;}}
