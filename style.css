@@ -1671,3 +1671,15 @@ button.danger{background:#442029;border-color:#7a3440}
 .enemyComposite .editorReplicaItem.battleWeapon.activePulse{animation:enemyPulseFilterV24 .34s ease-out;}
 @keyframes activePulseFilterV24{0%{filter:brightness(1)}50%{filter:brightness(1.8) saturate(1.25)}100%{filter:none}}
 @keyframes enemyPulseFilterV24{0%{filter:brightness(1)}50%{filter:brightness(1.8) saturate(1.25)}100%{filter:none}}
+
+/* ===== v26 v4.1 shared Game View renderer ===== */
+.v4LayoutView{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.v4CameraFrame{position:absolute;overflow:hidden;pointer-events:none;}
+.v4World{position:absolute;overflow:visible;transform:none!important;}
+.v4LayoutItem{position:absolute;pointer-events:none;user-select:none;}
+.v4LayoutItem>img{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;user-select:none;-webkit-user-drag:none;}
+.v4LayoutItem.editorShipHull>img{filter:drop-shadow(0 10px 16px rgba(0,0,0,.48));}
+.v4LayoutItem.editorShipPart>img{filter:drop-shadow(0 4px 5px rgba(0,0,0,.42));}
+.enemyComposite .v4LayoutItem.editorShipHull>img{filter:drop-shadow(0 10px 16px rgba(0,0,0,.48)) drop-shadow(0 0 8px rgba(255,93,122,.12));}
+.v4LaserItem{margin:0!important;inset:auto!important;}
+.v4RigHost{position:relative;overflow:hidden;}

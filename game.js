@@ -1755,6 +1755,124 @@ function closeSubScreen(){
  $$("#gameNav button").forEach(b=>b.classList.toggle("active",b.dataset.tab==="fishing"));
 }
 
+
+// ===== v26: v4.1 editor/game shared layout contract =====
+// Source of truth: void-angler-game-layout-v4.json exported by Editor v4.1.
+// The game does not auto-crop, recenter, or reinterpret camera values.
+const V4_LAYOUT = window.VOID_ANGLER_GAME_LAYOUT_V4 || null;
+const V4_BASE_W = Number(V4_LAYOUT?.viewport?.width || 900);
+const V4_BASE_H = Number(V4_LAYOUT?.viewport?.height || 1600);
+const V4_WEAPON_ASSET={pulse:'w_pulse',bolt:'w_twin',laser:'w_laser',missile:'w_missile',emp:'w_emp',barrier:'w_barrier',scatter:'w_scatter',piercer:'w_piercer'};
+const V4_EQUIP_ASSET={armorplate:'e_armor',shield:'e_shield',repair:'e_repair',aim:'e_aim',cooler:'e_cooler',bulk:'e_cargo',sensor:'e_sensor',stabilizer:'e_salvage'};
+function v4FishingAssetId(type,id){
+ const key=(fishingVisualKey[type]||{})[id]||id;
+ return `${type}_${key}`;
+}
+function v4VariantKey(sceneName,variant){ return sceneName==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1))); }
+function editorSceneVariant(sceneName,variant){
+ const key=v4VariantKey(sceneName,variant), v=V4_LAYOUT?.layouts?.[sceneName]?.[key];
+ return Array.isArray(v)?v:(v?.elements||[]);
+}
+function v4Camera(sceneName,variant){
+ const key=v4VariantKey(sceneName,variant);
+ return V4_LAYOUT?.cameras?.[sceneName]?.[key] || {x:0,y:0,w:100,h:100};
+}
+function v4AssetMeta(assetId){
+ const a=V4_LAYOUT?.assets?.[assetId];
+ if(!a) return {width:1,height:1,ax:.5,ay:.5,mx:.5,my:.5,tx:.5,ty:.5};
+ const w=Math.max(1,Number(a.width)||1), h=Math.max(1,Number(a.height)||1);
+ const A=a.anchor||{x:w/2,y:h/2}, M=a.mount||A, T=a.tip||A;
+ return {width:w,height:h,ax:Number(A.x)/w,ay:Number(A.y)/h,mx:Number(M.x)/w,my:Number(M.y)/h,tx:Number(T.x)/w,ty:Number(T.y)/h};
+}
+function v4ItemHTML(el,src,assetId,classes='',attrs=''){
+ if(!el||el.visible===false||!src)return '';
+ return `<div class="v4LayoutItem ${classes}" data-v4-key="${escAttr(el.key)}" data-v4-asset="${escAttr(assetId)}" ${attrs}><img src="${escAttr(src)}" draggable="false"></div>`;
+}
+function renderEditorReplica(sceneName,shipLevel,weaponLoadout,equipmentLoadout,{enemy=false,battle=false}={}){
+ const mk=Math.max(1,Math.min(4,Number(shipLevel)||1));
+ const elements=editorSceneVariant(sceneName,mk).slice().filter(el=>el?.visible!==false).sort((a,b)=>(a?.z||0)-(b?.z||0));
+ const assetSet=enemy?enemyVisualAssets:visualAssets;
+ let body='';
+ for(const el of elements){
+   if(el.key==='ship'){
+     const aid=`ship_mk${mk}`, src=assetSet.ships[mk]||visualAssets.ships[mk];
+     body+=v4ItemHTML(el,src,aid,battle?'editorShipHull battleHullExact':'editorShipHull maintHullExact');
+   }else if(/^weapon\d+$/.test(el.key)){
+     const idx=Math.max(0,parseInt(el.key.replace('weapon',''),10)-1), inst=weaponLoadout?.[idx]; if(!inst)continue;
+     const aid=V4_WEAPON_ASSET[inst.id]||el.assetId, src=assetSet.weapons[inst.id]||visualAssets.weapons[inst.id]; if(!src)continue;
+     const side=inst.side||shipWeaponSideForSlot(mk,idx), group=(side==='right'?'rightWeapon':'leftWeapon');
+     body+=v4ItemHTML(el,src,aid,battle?'editorShipPart battleWeapon':'editorShipPart maintWeaponExact',`data-part-group="${group}" data-slot="${idx+1}" data-weapon-id="${escAttr(inst.id)}"`);
+   }else if(/^equip\d+$/.test(el.key)){
+     const idx=Math.max(0,parseInt(el.key.replace('equip',''),10)-1), inst=equipmentLoadout?.[idx]; if(!inst)continue;
+     const aid=V4_EQUIP_ASSET[inst.id]||el.assetId, src=assetSet.equipments[inst.id]||visualAssets.equipments[inst.id]; if(!src)continue;
+     body+=v4ItemHTML(el,src,aid,battle?'editorShipPart battleEquipExact':'editorShipPart maintEquipExact',`data-part-group="equipment" data-slot="${idx+1}"`);
+   }else if(el.key==='laser' && enemy){
+     body+=`<div class="enemyLaserTurret v4LayoutItem v4LaserItem" data-v4-key="laser" data-v4-asset="w_laser" data-part-group="laser" aria-hidden="true"></div>`;
+   }
+ }
+ return `<div class="v4LayoutView" data-v4-scene="${sceneName}" data-v4-variant="${mk}"><div class="v4CameraFrame"><div class="v4World">${body}</div></div></div>`;
+}
+function battleShipComposite(shipLevel,weaponLoadout,equipmentLoadout,enemy=false){
+ const mk=Math.max(1,Math.min(4,Number(shipLevel)||1)), sceneName=enemy?'battle_enemy':'battle_player';
+ return `<div class="battleShipComposite editorSceneStage ${enemy?'enemyComposite':'playerComposite'}">${renderEditorReplica(sceneName,mk,weaponLoadout,equipmentLoadout,{enemy,battle:true})}</div>`;
+}
+function v4FishingView(){
+ const els=editorSceneVariant('maint_fishing','default').slice().filter(el=>el?.visible!==false).sort((a,b)=>(a?.z||0)-(b?.z||0));
+ const hookName=(hookTypes.find(x=>x.id===run.rod.hook)?.name||'標準フック');
+ const vals={rod:run.rod.rod,reel:run.rod.reel,line:run.rod.line,hook:run.rod.hook};
+ const labels={rod:run.rod.rod+'ロッド',reel:run.rod.reel+'リール',line:run.rod.line+'ライン',hook:hookName};
+ let body='';
+ for(const el of els){ const type=el.key,id=vals[type]; if(!id)continue; const aid=v4FishingAssetId(type,id),src=fishingAsset(type,id); body+=v4ItemHTML(el,src,aid,`rig-${type}`,`data-rig-type="${type}"`); }
+ return `<div class="v4LayoutView" data-v4-scene="maint_fishing" data-v4-variant="default"><div class="v4CameraFrame"><div class="v4World">${body}</div></div></div>`;
+}
+function renderFishingSchematic(){
+ const hookName=(hookTypes.find(x=>x.id===run.rod.hook)?.name||'標準フック');
+ const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod",run.rod.rod],["reel","リール",run.rod.reel+"リール","gear-slot-reel",run.rod.reel],["line","ライン",run.rod.line+"ライン","gear-slot-line",run.rod.line],["hook","フック",hookName,"gear-slot-hook",run.rod.hook]];
+ return `<div class="maintPanel"><div class="gearBlueprint sideFishingView visualFishingRig">
+   <div class="editorRigStage v4RigHost">${v4FishingView()}</div>
+   ${parts.map(([k,lbl,title,cls,id])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><span class="slotMiniIcon">${prettyItemIcon(k,id)}</span><span class="slotText"><small>${lbl}</small><strong>${title}</strong></span></button>`).join("")}
+ </div></div>`;
+}
+function v4Geometry(el,meta,worldW,worldH){
+ const wPx=worldW*(Number(el.w||10)/100)*(Number(el.scale||1));
+ const hPx=worldH*(Number(el.h||10)/100)*(Number(el.scale||1));
+ const ax=meta.ax,ay=meta.ay,mx=meta.mx,my=meta.my;
+ const targetX=worldW*(Number(el.x||0)/100), targetY=worldH*(Number(el.y||0)/100);
+ const rot=(Number(el.rotation)||0)*Math.PI/180, fx=el.flipX?-1:1, fy=el.flipY?-1:1;
+ const mode=el.placementMode==='mount'?'mount':'anchor';
+ const qx=(mode==='mount'?mx:ax)*wPx, qy=(mode==='mount'?my:ay)*hPx;
+ const apx=ax*wPx, apy=ay*hPx;
+ const dx=(qx-apx)*fx, dy=(qy-apy)*fy;
+ const rdx=dx*Math.cos(rot)-dy*Math.sin(rot), rdy=dx*Math.sin(rot)+dy*Math.cos(rot);
+ return {wPx,hPx,ax,ay,leftPx:targetX-apx-rdx,topPx:targetY-apy-rdy};
+}
+function syncV4LayoutViews(root=document){
+ if(!V4_LAYOUT)return;
+ root.querySelectorAll('.v4LayoutView').forEach(view=>{
+   const scene=view.dataset.v4Scene, variant=view.dataset.v4Variant, cam=v4Camera(scene,variant);
+   const host=view.getBoundingClientRect(); if(host.width<1||host.height<1)return;
+   const camPx={x:V4_BASE_W*Number(cam.x)/100,y:V4_BASE_H*Number(cam.y)/100,width:V4_BASE_W*Number(cam.w)/100,height:V4_BASE_H*Number(cam.h)/100};
+   if(camPx.width<=0||camPx.height<=0)return;
+   const scale=Math.min(host.width/camPx.width,host.height/camPx.height);
+   const shownW=camPx.width*scale, shownH=camPx.height*scale;
+   const frame=view.querySelector('.v4CameraFrame'), world=view.querySelector('.v4World'); if(!frame||!world)return;
+   Object.assign(frame.style,{width:`${shownW}px`,height:`${shownH}px`,left:`${(host.width-shownW)/2}px`,top:`${(host.height-shownH)/2}px`});
+   const worldW=V4_BASE_W*scale, worldH=V4_BASE_H*scale;
+   Object.assign(world.style,{width:`${worldW}px`,height:`${worldH}px`,left:`${-camPx.x*scale}px`,top:`${-camPx.y*scale}px`});
+   const els=editorSceneVariant(scene,variant), byKey=Object.fromEntries(els.map(el=>[el.key,el]));
+   world.querySelectorAll('.v4LayoutItem').forEach(node=>{
+     const el=byKey[node.dataset.v4Key]; if(!el)return;
+     const meta=v4AssetMeta(node.dataset.v4Asset||el.assetId), g=v4Geometry(el,meta,worldW,worldH);
+     Object.assign(node.style,{left:`${g.leftPx}px`,top:`${g.topPx}px`,width:`${g.wPx}px`,height:`${g.hPx}px`,zIndex:String(Number(el.z||1)),opacity:String(Number(el.opacity??1)),transformOrigin:`${g.ax*100}% ${g.ay*100}%`,transform:`rotate(${Number(el.rotation)||0}deg) scale(${el.flipX?-1:1},${el.flipY?-1:1})`});
+   });
+ });
+}
+let v4SyncPending=false;
+function scheduleV4Sync(){ if(v4SyncPending)return; v4SyncPending=true; requestAnimationFrame(()=>{v4SyncPending=false;syncV4LayoutViews();}); }
+window.addEventListener('resize',scheduleV4Sync);
+const v4Observer=new MutationObserver(scheduleV4Sync);
+const v4App=document.querySelector('#app'); if(v4App)v4Observer.observe(v4App,{childList:true,subtree:true});
+
 $$(".backBtn").forEach(b=>b.onclick=()=>showScreen(b.dataset.back));
 $("#upgradeMenuBtn").onclick=()=>{renderUpgradePanel();showScreen("upgradeScreen")};
 $("#recordsMenuBtn").onclick=()=>{renderRecords();showScreen("recordsScreen")};

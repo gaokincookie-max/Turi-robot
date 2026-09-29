@@ -166,3 +166,6 @@ This removes the previous double/triple source-of-truth problem and makes future
 - Ship rendering now mirrors the editor `renderLayoutPreview()` formula directly.
 - A true 9:16 internal preview stage is fitted into the game frame, preventing the game frame aspect ratio from changing element geometry.
 - Player ship/weapon/equipment PNGs are regenerated from each asset's original `_processed.value.url` in the source JSON.
+
+## v26 note
+Editor v4.1 のゲーム用JSONを直接基準にしたレイアウト描画へ移行しました。詳細は `README-v26.md` を参照してください。
