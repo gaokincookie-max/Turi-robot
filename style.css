@@ -1713,3 +1713,27 @@ button.danger{background:#442029;border-color:#7a3440}
 .shipVisualFrame:has(.vaCanvasShell),.battleShipVisual:has(.vaCanvasShell),.editorRigStage:has(.vaCanvasShell){padding:0!important;overflow:hidden!important;}
 /* Old v4 DOM worlds are no longer visual sources in v31. */
 .v4LayoutView{display:none!important;}
+
+
+/* ===== v31.2 hard-transparent Canvas surface =====
+   The canonical renderer supplies only sprites. The surrounding game UI owns
+   all backgrounds so no camera-sized rectangle can appear. */
+.vaCanvasScene{
+  background:transparent!important;
+  background-color:transparent!important;
+  box-shadow:none!important;
+  filter:none;
+}
+.vaCanvasShell{
+  background:transparent!important;
+  background-color:transparent!important;
+  box-shadow:none!important;
+}
+.editorRigStage:has(.vaCanvasShell),
+.v4RigHost:has(.vaCanvasShell),
+.battleShipComposite:has(.vaCanvasShell),
+.shipComposite:has(.vaCanvasShell){
+  background:transparent!important;
+  background-color:transparent!important;
+  box-shadow:none!important;
+}

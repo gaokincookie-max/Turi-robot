@@ -91,8 +91,18 @@
     const dpr=Math.max(1,Math.min(3,Number(pixelRatio)||1));
     canvas.width=Math.round(targetW*dpr); canvas.height=Math.round(targetH*dpr);
     canvas.style.width=`${targetW}px`; canvas.style.height=`${targetH}px`;
-    const ctx=canvas.getContext('2d');
-    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,targetW,targetH);
+    const ctx=canvas.getContext('2d',{alpha:true});
+    // Hard-reset every frame to transparent pixels before drawing. Using
+    // globalCompositeOperation='copy' avoids stale RGB/alpha from any prior
+    // render regardless of the current transform/state.
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.globalCompositeOperation='copy';
+    ctx.fillStyle='rgba(0,0,0,0)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.globalCompositeOperation='source-over';
     if(background) drawBackground(ctx,targetW,targetH);
 
     const scale=Math.min(targetW/camPx.width,targetH/camPx.height);
@@ -130,6 +140,6 @@
   }
 
   global.VoidAnglerCanvasRenderer={
-    version:'canvas-v1.1', viewportVirtualSize, elementGeometry, renderSceneToCanvas
+    version:'canvas-v1.2-transparent', viewportVirtualSize, elementGeometry, renderSceneToCanvas
   };
 })(window);
