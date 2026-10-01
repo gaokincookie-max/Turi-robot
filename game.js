@@ -1913,12 +1913,16 @@ const v4App=document.querySelector('#app'); if(v4App)v4Observer.observe(v4App,{c
 
 // ===== v31: canonical Canvas renderer (same file as Editor v4.4) =====
 const VA_CANVAS_RENDERER = window.VoidAnglerCanvasRenderer;
-function vaCanvasHTML(scene,variant,kind='ship'){
-  return `<div class="vaCanvasShell" data-va-scene="${scene}" data-va-variant="${variant}" data-va-kind="${kind}"><canvas class="vaCanvasScene"></canvas><div class="vaCanvasMarkers"></div></div>`;
+function vaCanvasHTML(scene,variant,kind='ship',opts={}){
+  const rotate=Number(opts.rotate)||0;
+  return `<div class="vaCanvasShell" data-va-scene="${scene}" data-va-variant="${variant}" data-va-kind="${kind}" data-va-rotate="${rotate}"><canvas class="vaCanvasScene"></canvas><div class="vaCanvasMarkers"></div></div>`;
 }
 function vaSceneElements(scene,variant){
-  const key=scene==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1)));
-  const v=V4_LAYOUT?.layouts?.[scene]?.[key];
+  // v31.3: the assembled maintenance ship is the one canonical ship shape.
+  // Battle scenes reuse maint_ship verbatim; only the outer canvas placement/rotation differs.
+  const sourceScene=(scene==='battle_player'||scene==='battle_enemy')?'maint_ship':scene;
+  const key=sourceScene==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1)));
+  const v=V4_LAYOUT?.layouts?.[sourceScene]?.[key];
   return (Array.isArray(v)?v:v?.elements||[]).map(x=>({...x}));
 }
 function vaAssetProc(assetId,srcOverride){
@@ -1955,8 +1959,9 @@ function vaBuildScene(shell){
   return {elements:out,processedAssets:procs};
 }
 function vaCameraFor(scene,variant){
-  const key=scene==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1)));
-  return V4_LAYOUT?.cameras?.[scene]?.[key]||{x:0,y:0,w:100,h:100};
+  const sourceScene=(scene==='battle_player'||scene==='battle_enemy')?'maint_ship':scene;
+  const key=sourceScene==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1)));
+  return V4_LAYOUT?.cameras?.[sourceScene]?.[key]||{x:0,y:0,w:100,h:100};
 }
 function vaFitSize(shell,camera){
   const r=shell.getBoundingClientRect();
@@ -1989,6 +1994,18 @@ function vaInstallMarkers(shell,result,elements){
     const point=(el.key==='laser'||/^weapon\d+$/.test(el.key))?p.tip:p.anchor;
     m.style.left=(ox+point.x)+'px';m.style.top=(oy+point.y)+'px';layer.appendChild(m);
   }
+  // The enemy's heavy laser is a battle-only emitter. Keep it out of the
+  // canonical ship artwork and expose only an invisible origin marker.
+  if(shell.dataset.vaScene==='battle_enemy'){
+    const laser=document.createElement('span');
+    laser.className='vaCanvasMarker enemyLaserTurret';
+    laser.dataset.partGroup='laser';
+    // Front-center of the unrotated maintenance canvas. The whole shell is
+    // rotated 180° for enemies, so this lands at the enemy-facing bow.
+    laser.style.left=(ox+cr.width*.5)+'px';
+    laser.style.top=(oy+cr.height*.16)+'px';
+    layer.appendChild(laser);
+  }
 }
 let vaCanvasRenderToken=0;
 async function syncVACanvasViews(root=document){
@@ -2017,7 +2034,9 @@ function renderShipComposite(){
 }
 function battleShipComposite(shipLevel,weaponLoadout,equipmentLoadout,enemy=false){
   const mk=Math.max(1,Math.min(4,Number(shipLevel)||1)),scene=enemy?'battle_enemy':'battle_player';
-  return `<div class="battleShipComposite editorSceneStage ${enemy?'enemyComposite':'playerComposite'}">${vaCanvasHTML(scene,mk,'battle')}</div>`;
+  // Same completed maint_ship canvas for battle. Enemy presentation rotates
+  // the whole completed canvas instead of rotating individual parts.
+  return `<div class="battleShipComposite editorSceneStage ${enemy?'enemyComposite':'playerComposite'}">${vaCanvasHTML(scene,mk,'battle',{rotate:enemy?180:0})}</div>`;
 }
 function v4FishingView(){ return vaCanvasHTML('maint_fishing','default','fishing'); }
 function renderFishingSchematic(){

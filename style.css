@@ -1737,3 +1737,18 @@ button.danger{background:#442029;border-color:#7a3440}
   background-color:transparent!important;
   box-shadow:none!important;
 }
+
+/* ===== v31.3 shared maintenance/battle ship =====
+   Battle renders the exact completed maint_ship canvas. Only the entire enemy
+   canvas is rotated; no child sprite gets a separate battle transform. */
+.battleShipComposite .vaCanvasShell[data-va-kind="battle"]{
+  transform-origin:50% 50%;
+}
+.battleShipComposite .vaCanvasShell[data-va-kind="battle"][data-va-rotate="180"]{
+  transform:rotate(180deg);
+}
+/* Old enemy per-part transform/filter rules must never affect canonical canvas. */
+.enemyComposite .vaCanvasScene,
+.enemyComposite .vaCanvasMarkers{
+  filter:none!important;
+}
