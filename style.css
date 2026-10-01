@@ -1704,3 +1704,12 @@ button.danger{background:#442029;border-color:#7a3440}
 .v4LayoutView{position:absolute;inset:0;overflow:hidden!important;}
 .v4LayoutView>.v4World{position:absolute!important;transform:none!important;transform-origin:0 0!important;}
 .shipVisualFrame:has(.v4LayoutView){padding:0!important;}
+
+/* ===== v31 canonical Canvas renderer ===== */
+.vaCanvasShell{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;pointer-events:none;}
+.vaCanvasScene{display:block;max-width:100%;max-height:100%;image-rendering:pixelated;}
+.vaCanvasMarkers{position:absolute;inset:0;pointer-events:none;}
+.vaCanvasMarker{position:absolute;width:2px;height:2px;transform:translate(-50%,-50%);opacity:0;pointer-events:none;}
+.shipVisualFrame:has(.vaCanvasShell),.battleShipVisual:has(.vaCanvasShell),.editorRigStage:has(.vaCanvasShell){padding:0!important;overflow:hidden!important;}
+/* Old v4 DOM worlds are no longer visual sources in v31. */
+.v4LayoutView{display:none!important;}

@@ -1909,6 +1909,123 @@ window.addEventListener('resize',scheduleV4Sync);
 const v4Observer=new MutationObserver(scheduleV4Sync);
 const v4App=document.querySelector('#app'); if(v4App)v4Observer.observe(v4App,{childList:true,subtree:true});
 
+
+
+// ===== v31: canonical Canvas renderer (same file as Editor v4.4) =====
+const VA_CANVAS_RENDERER = window.VoidAnglerCanvasRenderer;
+function vaCanvasHTML(scene,variant,kind='ship'){
+  return `<div class="vaCanvasShell" data-va-scene="${scene}" data-va-variant="${variant}" data-va-kind="${kind}"><canvas class="vaCanvasScene"></canvas><div class="vaCanvasMarkers"></div></div>`;
+}
+function vaSceneElements(scene,variant){
+  const key=scene==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1)));
+  const v=V4_LAYOUT?.layouts?.[scene]?.[key];
+  return (Array.isArray(v)?v:v?.elements||[]).map(x=>({...x}));
+}
+function vaAssetProc(assetId,srcOverride){
+  const a=V4_LAYOUT?.assets?.[assetId]; if(!a)return null;
+  return {url:srcOverride||a.src,width:Number(a.width)||1,height:Number(a.height)||1,anchor:a.anchor,mount:a.mount,tip:a.tip,muzzle:a.tip};
+}
+function vaBuildScene(shell){
+  const scene=shell.dataset.vaScene, variant=shell.dataset.vaVariant;
+  const els=vaSceneElements(scene,variant);
+  const out=[], procs={};
+  const mk=Math.max(1,Math.min(4,Number(variant)||1));
+  const enemy=scene==='battle_enemy';
+  const weaponLoadout=enemy?run?.enemy?.weaponLoadout:run?.weapons;
+  const equipmentLoadout=enemy?run?.enemy?.equipmentLoadout:run?.equipments;
+  const fishingVals=run?.rod?{rod:run.rod.rod,reel:run.rod.reel,line:run.rod.line,hook:run.rod.hook}:{};
+  for(const baseEl of els){
+    let el={...baseEl}, aid=el.assetId;
+    if(el.key==='ship'){
+      aid=`ship_mk${mk}`; el.assetId=aid;
+    }else if(/^weapon\d+$/.test(el.key)){
+      const idx=Math.max(0,parseInt(el.key.replace('weapon',''),10)-1),inst=weaponLoadout?.[idx];
+      if(!inst)continue; aid=V4_WEAPON_ASSET[inst.id]||el.assetId; el.assetId=aid;
+    }else if(/^equip\d+$/.test(el.key)){
+      const idx=Math.max(0,parseInt(el.key.replace('equip',''),10)-1),inst=equipmentLoadout?.[idx];
+      if(!inst)continue; aid=V4_EQUIP_ASSET[inst.id]||el.assetId; el.assetId=aid;
+    }else if(scene==='maint_fishing'){
+      const id=fishingVals[el.key]; if(!id)continue; aid=v4FishingAssetId(el.key,id); el.assetId=aid;
+    }else if(el.key==='laser'){
+      if(!enemy)continue; aid='w_laser'; el.assetId=aid;
+    }
+    const proc=vaAssetProc(aid); if(!proc)continue;
+    procs[aid]=proc; out.push(el);
+  }
+  return {elements:out,processedAssets:procs};
+}
+function vaCameraFor(scene,variant){
+  const key=scene==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1)));
+  return V4_LAYOUT?.cameras?.[scene]?.[key]||{x:0,y:0,w:100,h:100};
+}
+function vaFitSize(shell,camera){
+  const r=shell.getBoundingClientRect();
+  const base=VA_CANVAS_RENDERER?.viewportVirtualSize(V4_LAYOUT?.viewport?.type||'phone')||{width:900,height:1600};
+  const aspect=(base.width*(Number(camera.w)||100)/100)/(base.height*(Number(camera.h)||100)/100);
+  let maxW=Math.max(1,r.width||300), maxH=Math.max(1,r.height||400), w=maxW,h=w/aspect;
+  if(h>maxH){h=maxH;w=h*aspect;}
+  return {w:Math.max(1,Math.round(w)),h:Math.max(1,Math.round(h))};
+}
+function vaInstallMarkers(shell,result,elements){
+  const layer=shell.querySelector('.vaCanvasMarkers'); if(!layer)return;
+  layer.innerHTML='';
+  const canvas=shell.querySelector('.vaCanvasScene');
+  const cr=canvas.getBoundingClientRect(),sr=shell.getBoundingClientRect();
+  const ox=cr.left-sr.left, oy=cr.top-sr.top;
+  for(const el of elements){
+    const p=result.points?.[el.id]; if(!p)continue;
+    const m=document.createElement('span');
+    let cls='vaCanvasMarker';
+    if(/^weapon\d+$/.test(el.key)) cls+=' battleWeapon';
+    if(el.key==='laser') cls+=' enemyLaserTurret';
+    m.className=cls; m.dataset.v4Key=el.key;
+    if(/^weapon\d+$/.test(el.key)){
+      const idx=Math.max(0,parseInt(el.key.replace('weapon',''),10)-1);
+      const enemy=shell.dataset.vaScene==='battle_enemy';
+      const inst=(enemy?run?.enemy?.weaponLoadout:run?.weapons)?.[idx];
+      if(inst){m.dataset.weaponId=inst.id; m.dataset.slot=String(idx+1); const side=inst.side||shipWeaponSideForSlot(Math.max(1,Number(shell.dataset.vaVariant)||1),idx); m.dataset.partGroup=side==='right'?'rightWeapon':'leftWeapon';}
+    } else if(/^equip\d+$/.test(el.key)) m.dataset.partGroup='equipment';
+    else if(el.key==='laser') m.dataset.partGroup='laser';
+    const point=(el.key==='laser'||/^weapon\d+$/.test(el.key))?p.tip:p.anchor;
+    m.style.left=(ox+point.x)+'px';m.style.top=(oy+point.y)+'px';layer.appendChild(m);
+  }
+}
+let vaCanvasRenderToken=0;
+async function syncVACanvasViews(root=document){
+  if(!VA_CANVAS_RENDERER||!V4_LAYOUT)return;
+  const token=++vaCanvasRenderToken;
+  for(const shell of root.querySelectorAll('.vaCanvasShell')){
+    if(!shell.isConnected)continue;
+    const scene=shell.dataset.vaScene,variant=shell.dataset.vaVariant,camera=vaCameraFor(scene,variant);
+    const {elements,processedAssets}=vaBuildScene(shell), size=vaFitSize(shell,camera), canvas=shell.querySelector('.vaCanvasScene');
+    try{
+      const res=await VA_CANVAS_RENDERER.renderSceneToCanvas(canvas,{viewport:V4_LAYOUT?.viewport?.type||'phone',camera,elements,processedAssets,cssWidth:size.w,cssHeight:size.h,pixelRatio:Math.min(2,window.devicePixelRatio||1),background:true});
+      if(token!==vaCanvasRenderToken||!shell.isConnected)continue;
+      vaInstallMarkers(shell,res,elements);
+    }catch(err){ console.error('VA canvas render failed',scene,variant,err); }
+  }
+}
+let vaCanvasPending=false;
+function scheduleVACanvasSync(){if(vaCanvasPending)return;vaCanvasPending=true;requestAnimationFrame(()=>{vaCanvasPending=false;syncVACanvasViews();});}
+window.addEventListener('resize',scheduleVACanvasSync);
+const vaCanvasObserver=new MutationObserver(scheduleVACanvasSync);const vaCanvasApp=document.querySelector('#app');if(vaCanvasApp)vaCanvasObserver.observe(vaCanvasApp,{childList:true,subtree:true});
+
+// Final v31 visual entry points: no per-part DOM positioning.
+function renderShipComposite(){
+  const lv=Math.min(4,run.shipLevel);
+  return `<div class="shipComposite editorSceneStage">${vaCanvasHTML('maint_ship',lv,'ship')}</div>`;
+}
+function battleShipComposite(shipLevel,weaponLoadout,equipmentLoadout,enemy=false){
+  const mk=Math.max(1,Math.min(4,Number(shipLevel)||1)),scene=enemy?'battle_enemy':'battle_player';
+  return `<div class="battleShipComposite editorSceneStage ${enemy?'enemyComposite':'playerComposite'}">${vaCanvasHTML(scene,mk,'battle')}</div>`;
+}
+function v4FishingView(){ return vaCanvasHTML('maint_fishing','default','fishing'); }
+function renderFishingSchematic(){
+ const hookName=(hookTypes.find(x=>x.id===run.rod.hook)?.name||'標準フック');
+ const parts=[["rod","ロッド",run.rod.rod+"ロッド","gear-slot-rod",run.rod.rod],["reel","リール",run.rod.reel+"リール","gear-slot-reel",run.rod.reel],["line","ライン",run.rod.line+"ライン","gear-slot-line",run.rod.line],["hook","フック",hookName,"gear-slot-hook",run.rod.hook]];
+ return `<div class="maintPanel"><div class="gearBlueprint sideFishingView visualFishingRig"><div class="editorRigStage v4RigHost">${v4FishingView()}</div>${parts.map(([k,lbl,title,cls,id])=>`<button class="slotButton gearSlotButton ${cls} ${(maintState.slot===k)?"active":""}" data-maint-slot="${k}"><span class="slotMiniIcon">${prettyItemIcon(k,id)}</span><span class="slotText"><small>${lbl}</small><strong>${title}</strong></span></button>`).join("")}</div></div>`;
+}
+
 $$(".backBtn").forEach(b=>b.onclick=()=>showScreen(b.dataset.back));
 $("#upgradeMenuBtn").onclick=()=>{renderUpgradePanel();showScreen("upgradeScreen")};
 $("#recordsMenuBtn").onclick=()=>{renderRecords();showScreen("recordsScreen")};
