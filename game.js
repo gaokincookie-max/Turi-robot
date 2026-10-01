@@ -1999,7 +1999,7 @@ async function syncVACanvasViews(root=document){
     const scene=shell.dataset.vaScene,variant=shell.dataset.vaVariant,camera=vaCameraFor(scene,variant);
     const {elements,processedAssets}=vaBuildScene(shell), size=vaFitSize(shell,camera), canvas=shell.querySelector('.vaCanvasScene');
     try{
-      const res=await VA_CANVAS_RENDERER.renderSceneToCanvas(canvas,{viewport:V4_LAYOUT?.viewport?.type||'phone',camera,elements,processedAssets,cssWidth:size.w,cssHeight:size.h,pixelRatio:Math.min(2,window.devicePixelRatio||1),background:true});
+      const res=await VA_CANVAS_RENDERER.renderSceneToCanvas(canvas,{viewport:V4_LAYOUT?.viewport?.type||'phone',camera,elements,processedAssets,cssWidth:size.w,cssHeight:size.h,pixelRatio:Math.min(2,window.devicePixelRatio||1),background:false});
       if(token!==vaCanvasRenderToken||!shell.isConnected)continue;
       vaInstallMarkers(shell,res,elements);
     }catch(err){ console.error('VA canvas render failed',scene,variant,err); }
