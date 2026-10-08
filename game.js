@@ -76,64 +76,64 @@ const visualAssets={
    cell:"assets/materials/mat_cell.png"
  },
  ships:{
-   1:"assets/ships/ship_mk1.png",
-   2:"assets/ships/ship_mk2.png",
-   3:"assets/ships/ship_mk3.png",
-   4:"assets/ships/ship_mk4.png"
+   1:"assets/v4_5_final/ship_mk1.png",
+   2:"assets/v4_5_final/ship_mk2.png",
+   3:"assets/v4_5_final/ship_mk3.png",
+   4:"assets/v4_5_final/ship_mk4.png"
  },
  weapons:{
-   pulse:"assets/weapons/w_pulse.png",
-   bolt:"assets/weapons/w_twin.png",
-   laser:"assets/weapons/w_laser.png",
-   missile:"assets/weapons/w_missile.png",
-   emp:"assets/weapons/w_emp.png",
-   barrier:"assets/weapons/w_barrier.png",
-   scatter:"assets/weapons/w_scatter.png",
-   piercer:"assets/weapons/w_piercer.png"
+   pulse:"assets/v4_5_final/w_pulse.png",
+   bolt:"assets/v4_5_final/w_twin.png",
+   laser:"assets/v4_5_final/w_laser.png",
+   missile:"assets/v4_5_final/w_missile.png",
+   emp:"assets/v4_5_final/w_emp.png",
+   barrier:"assets/v4_5_final/w_barrier.png",
+   scatter:"assets/v4_5_final/w_scatter.png",
+   piercer:"assets/v4_5_final/w_piercer.png"
  },
  equipments:{
-   armorplate:"assets/equipment/e_armor.png",
-   shield:"assets/equipment/e_shield.png",
-   repair:"assets/equipment/e_repair.png",
-   aim:"assets/equipment/e_aim.png",
-   cooler:"assets/equipment/e_cooler.png",
-   bulk:"assets/equipment/e_cargo.png",
-   sensor:"assets/equipment/e_sensor.png",
-   stabilizer:"assets/equipment/e_salvage.png"
+   armorplate:"assets/v4_5_final/e_armor.png",
+   shield:"assets/v4_5_final/e_shield.png",
+   repair:"assets/v4_5_final/e_repair.png",
+   aim:"assets/v4_5_final/e_aim.png",
+   cooler:"assets/v4_5_final/e_cooler.png",
+   bulk:"assets/v4_5_final/e_cargo.png",
+   sensor:"assets/v4_5_final/e_sensor.png",
+   stabilizer:"assets/v4_5_final/e_salvage.png"
  },
  fishing:{
-   rod:{standard:"assets/fishing/rod/standard.png",stable:"assets/fishing/rod/stable.png",fast:"assets/fishing/rod/fast.png",heavy:"assets/fishing/rod/heavy.png"},
-   reel:{standard:"assets/fishing/reel/standard.png",stable:"assets/fishing/reel/stable.png",fast:"assets/fishing/reel/fast.png",heavy:"assets/fishing/reel/heavy.png"},
-   line:{standard:"assets/fishing/line/standard.png",stable:"assets/fishing/line/stable.png",fast:"assets/fishing/line/fast.png",heavy:"assets/fishing/line/heavy.png"},
-   hook:{standard:"assets/fishing/hook/standard.png",magnet:"assets/fishing/hook/magnet.png",recovery:"assets/fishing/hook/recovery.png",military:"assets/fishing/hook/military.png",probe:"assets/fishing/hook/probe.png"}
+   rod:{standard:"assets/v4_5_final/rod_standard.png",stable:"assets/v4_5_final/rod_stable.png",fast:"assets/v4_5_final/rod_fast.png",heavy:"assets/v4_5_final/rod_heavy.png"},
+   reel:{standard:"assets/v4_5_final/reel_standard.png",stable:"assets/v4_5_final/reel_stable.png",fast:"assets/v4_5_final/reel_fast.png",heavy:"assets/v4_5_final/reel_heavy.png"},
+   line:{standard:"assets/v4_5_final/line_standard.png",stable:"assets/v4_5_final/line_stable.png",fast:"assets/v4_5_final/line_fast.png",heavy:"assets/v4_5_final/line_heavy.png"},
+   hook:{standard:"assets/v4_5_final/hook_standard.png",magnet:"assets/v4_5_final/hook_magnet.png",recovery:"assets/v4_5_final/hook_recovery.png",military:"assets/v4_5_final/hook_military.png",probe:"assets/v4_5_final/hook_probe.png"}
  }
 };
 const enemyVisualAssets={
  ships:{
-   1:"assets/enemy/ships/ship_mk1.png",
-   2:"assets/enemy/ships/ship_mk2.png",
-   3:"assets/enemy/ships/ship_mk3.png",
-   4:"assets/enemy/ships/ship_mk4.png"
+   1:"assets/v4_5_final/enemy_ship_mk1.png",
+   2:"assets/v4_5_final/enemy_ship_mk2.png",
+   3:"assets/v4_5_final/enemy_ship_mk3.png",
+   4:"assets/v4_5_final/enemy_ship_mk4.png"
  },
  weapons:{
-   pulse:"assets/enemy/weapons/w_pulse.png",
-   bolt:"assets/enemy/weapons/w_twin.png",
-   laser:"assets/enemy/weapons/w_laser.png",
-   missile:"assets/enemy/weapons/w_missile.png",
-   emp:"assets/enemy/weapons/w_emp.png",
-   barrier:"assets/enemy/weapons/w_barrier.png",
-   scatter:"assets/enemy/weapons/w_scatter.png",
-   piercer:"assets/enemy/weapons/w_piercer.png"
+   pulse:"assets/v4_5_final/enemy_w_pulse.png",
+   bolt:"assets/v4_5_final/enemy_w_twin.png",
+   laser:"assets/v4_5_final/enemy_w_laser.png",
+   missile:"assets/v4_5_final/enemy_w_missile.png",
+   emp:"assets/v4_5_final/enemy_w_emp.png",
+   barrier:"assets/v4_5_final/enemy_w_barrier.png",
+   scatter:"assets/v4_5_final/enemy_w_scatter.png",
+   piercer:"assets/v4_5_final/enemy_w_piercer.png"
  },
  equipments:{
-   armorplate:"assets/enemy/equipment/e_armor.png",
-   shield:"assets/enemy/equipment/e_shield.png",
-   repair:"assets/enemy/equipment/e_repair.png",
-   aim:"assets/enemy/equipment/e_aim.png",
-   cooler:"assets/enemy/equipment/e_cooler.png",
-   bulk:"assets/enemy/equipment/e_cargo.png",
-   sensor:"assets/enemy/equipment/e_sensor.png",
-   stabilizer:"assets/enemy/equipment/e_salvage.png"
+   armorplate:"assets/v4_5_final/enemy_e_armor.png",
+   shield:"assets/v4_5_final/enemy_e_shield.png",
+   repair:"assets/v4_5_final/enemy_e_repair.png",
+   aim:"assets/v4_5_final/enemy_e_aim.png",
+   cooler:"assets/v4_5_final/enemy_e_cooler.png",
+   bulk:"assets/v4_5_final/enemy_e_cargo.png",
+   sensor:"assets/v4_5_final/enemy_e_sensor.png",
+   stabilizer:"assets/v4_5_final/enemy_e_salvage.png"
  }
 };
 // ===== v18: layout editor import =====
@@ -1760,7 +1760,7 @@ function closeSubScreen(){
 // Source of truth: void-angler-game-layout-v4.json exported by Editor v4.1.
 // The game does not auto-crop, recenter, or reinterpret camera values.
 const V4_LAYOUT = window.VOID_ANGLER_GAME_LAYOUT_V4 || null;
-const V4_LAYOUT_BUILD = 'v31.4.1-final-v4.5.2';
+const V4_LAYOUT_BUILD = 'v31.4.4-final-v4.5.2-png-assets';
 if(V4_LAYOUT) console.info('[VOID ANGLER]', V4_LAYOUT_BUILD, 'layout', V4_LAYOUT.version, 'assets', Object.keys(V4_LAYOUT.assets||{}).length);
 const V4_BASE_W = Number(V4_LAYOUT?.viewport?.width || 900);
 const V4_BASE_H = Number(V4_LAYOUT?.viewport?.height || 1600);
