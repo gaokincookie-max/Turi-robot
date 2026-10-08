@@ -1760,6 +1760,8 @@ function closeSubScreen(){
 // Source of truth: void-angler-game-layout-v4.json exported by Editor v4.1.
 // The game does not auto-crop, recenter, or reinterpret camera values.
 const V4_LAYOUT = window.VOID_ANGLER_GAME_LAYOUT_V4 || null;
+const V4_LAYOUT_BUILD = 'v31.4.1-final-v4.5.2';
+if(V4_LAYOUT) console.info('[VOID ANGLER]', V4_LAYOUT_BUILD, 'layout', V4_LAYOUT.version, 'assets', Object.keys(V4_LAYOUT.assets||{}).length);
 const V4_BASE_W = Number(V4_LAYOUT?.viewport?.width || 900);
 const V4_BASE_H = Number(V4_LAYOUT?.viewport?.height || 1600);
 const V4_WEAPON_ASSET={pulse:'w_pulse',bolt:'w_twin',laser:'w_laser',missile:'w_missile',emp:'w_emp',barrier:'w_barrier',scatter:'w_scatter',piercer:'w_piercer'};
@@ -1918,11 +1920,10 @@ function vaCanvasHTML(scene,variant,kind='ship',opts={}){
   return `<div class="vaCanvasShell" data-va-scene="${scene}" data-va-variant="${variant}" data-va-kind="${kind}" data-va-rotate="${rotate}"><canvas class="vaCanvasScene"></canvas><div class="vaCanvasMarkers"></div></div>`;
 }
 function vaSceneElements(scene,variant){
-  // v31.3: the assembled maintenance ship is the one canonical ship shape.
-  // Battle scenes reuse maint_ship verbatim; only the outer canvas placement/rotation differs.
-  const sourceScene=(scene==='battle_player'||scene==='battle_enemy')?'maint_ship':scene;
-  const key=sourceScene==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1)));
-  const v=V4_LAYOUT?.layouts?.[sourceScene]?.[key];
+  // v31.4: use the exported v4.5 scene literally. Battle player/enemy now have
+  // their own editor-authored geometry/camera, while maint_ship stays independent.
+  const key=scene==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1)));
+  const v=V4_LAYOUT?.layouts?.[scene]?.[key];
   return (Array.isArray(v)?v:v?.elements||[]).map(x=>({...x}));
 }
 function vaAssetProc(assetId,srcOverride){
@@ -1941,17 +1942,23 @@ function vaBuildScene(shell){
   for(const baseEl of els){
     let el={...baseEl}, aid=el.assetId;
     if(el.key==='ship'){
-      aid=`ship_mk${mk}`; el.assetId=aid;
+      aid=enemy?`enemy_ship_mk${mk}`:`ship_mk${mk}`; el.assetId=aid;
     }else if(/^weapon\d+$/.test(el.key)){
       const idx=Math.max(0,parseInt(el.key.replace('weapon',''),10)-1),inst=weaponLoadout?.[idx];
-      if(!inst)continue; aid=V4_WEAPON_ASSET[inst.id]||el.assetId; el.assetId=aid;
+      if(!inst)continue;
+      const baseAid=V4_WEAPON_ASSET[inst.id]||el.assetId?.replace(/^enemy_/,'');
+      aid=enemy&&!String(baseAid).startsWith('enemy_')?`enemy_${baseAid}`:baseAid;
+      el.assetId=aid;
     }else if(/^equip\d+$/.test(el.key)){
       const idx=Math.max(0,parseInt(el.key.replace('equip',''),10)-1),inst=equipmentLoadout?.[idx];
-      if(!inst)continue; aid=V4_EQUIP_ASSET[inst.id]||el.assetId; el.assetId=aid;
+      if(!inst)continue;
+      const baseAid=V4_EQUIP_ASSET[inst.id]||el.assetId?.replace(/^enemy_/,'');
+      aid=enemy&&!String(baseAid).startsWith('enemy_')?`enemy_${baseAid}`:baseAid;
+      el.assetId=aid;
     }else if(scene==='maint_fishing'){
       const id=fishingVals[el.key]; if(!id)continue; aid=v4FishingAssetId(el.key,id); el.assetId=aid;
     }else if(el.key==='laser'){
-      if(!enemy)continue; aid='w_laser'; el.assetId=aid;
+      if(!enemy)continue; aid='enemy_w_laser'; el.assetId=aid;
     }
     const proc=vaAssetProc(aid); if(!proc)continue;
     procs[aid]=proc; out.push(el);
@@ -1959,9 +1966,8 @@ function vaBuildScene(shell){
   return {elements:out,processedAssets:procs};
 }
 function vaCameraFor(scene,variant){
-  const sourceScene=(scene==='battle_player'||scene==='battle_enemy')?'maint_ship':scene;
-  const key=sourceScene==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1)));
-  return V4_LAYOUT?.cameras?.[sourceScene]?.[key]||{x:0,y:0,w:100,h:100};
+  const key=scene==='maint_fishing'?'default':String(Math.max(1,Math.min(4,Number(variant)||1)));
+  return V4_LAYOUT?.cameras?.[scene]?.[key]||{x:0,y:0,w:100,h:100};
 }
 function vaFitSize(shell,camera){
   const r=shell.getBoundingClientRect();
@@ -2000,10 +2006,10 @@ function vaInstallMarkers(shell,result,elements){
     const laser=document.createElement('span');
     laser.className='vaCanvasMarker enemyLaserTurret';
     laser.dataset.partGroup='laser';
-    // Front-center of the unrotated maintenance canvas. The whole shell is
-    // rotated 180° for enemies, so this lands at the enemy-facing bow.
+    // battle_enemy is already authored facing the player in v4.5, so the
+    // invisible heavy-laser emitter sits directly on the lower bow.
     laser.style.left=(ox+cr.width*.5)+'px';
-    laser.style.top=(oy+cr.height*.16)+'px';
+    laser.style.top=(oy+cr.height*.84)+'px';
     layer.appendChild(laser);
   }
 }
@@ -2034,9 +2040,8 @@ function renderShipComposite(){
 }
 function battleShipComposite(shipLevel,weaponLoadout,equipmentLoadout,enemy=false){
   const mk=Math.max(1,Math.min(4,Number(shipLevel)||1)),scene=enemy?'battle_enemy':'battle_player';
-  // Same completed maint_ship canvas for battle. Enemy presentation rotates
-  // the whole completed canvas instead of rotating individual parts.
-  return `<div class="battleShipComposite editorSceneStage ${enemy?'enemyComposite':'playerComposite'}">${vaCanvasHTML(scene,mk,'battle',{rotate:enemy?180:0})}</div>`;
+  // v4.5 battle scenes already contain the final orientation and placement.
+  return `<div class="battleShipComposite editorSceneStage ${enemy?'enemyComposite':'playerComposite'}">${vaCanvasHTML(scene,mk,'battle')}</div>`;
 }
 function v4FishingView(){ return vaCanvasHTML('maint_fishing','default','fishing'); }
 function renderFishingSchematic(){
