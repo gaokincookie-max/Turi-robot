@@ -374,7 +374,7 @@ function getLoad(){
 function updateHUD(){
  if(!run)return;
  $("#distanceText").textContent=run.distance.toFixed(2);$("#playerHpText").textContent=`${Math.ceil(run.hp)}/${run.maxHp}`;
- $("#playerHpFill").style.width=`${clamp(run.hp/run.maxHp*100,0,100)}%`;$("#loadText").textContent=`${getLoad()}/${run.maxLoad}`;
+ $("#playerHpFill").style.width=`${clamp(run.hp/run.maxHp*100,0,100)}%`;$("#loadText").textContent=`${run.storage.length}/${run.storageCap}`;
 }
 function startGame(){
  normalizeResumeState();
@@ -897,7 +897,7 @@ function battleTick(){
  if(e._enemyFireClock>=efr){e._enemyFireClock=0;const enemyDmg=enemyWeaponAttackPower(e)*rand(.82,1.12);if(enemyDmg>0){fireEnemyVolley();takeDamage(enemyDmg)}}
  if(!e.parts.equipment.destroyed&&(e.parts.equipment.disabledUntil||0)<=Date.now()&&emods.repair>0)e.hp=Math.min(e.maxHp,e.hp+e.maxHp*emods.repair*.012*dt);
  const laser=e.parts.laser;if(e.nextBig<=0&&!laser.destroyed&&(laser.disabledUntil||0)<=Date.now()){e.nextBig=rand(e.laserInterval*.85,e.laserInterval*1.15);startQTE()}
- if(e.hp<=0){winBattle();return}renderEnemy();
+ if(e.hp<=0){winBattle();return}renderEnemy();updateBattleActionCooldowns();
 }
 function damageReduction(){const armor=Math.min(.18,.022*Math.sqrt(meta.upgrades.armor||0));return clamp(armor+(run.mods?.shield||0)+(run._barrierUntil>Date.now()?.55:0),0,.8)}
 function takeDamage(v){run.hp-=v*(1-damageReduction());flashShipHit("#playerShipVisual",false);if(meta.settings.shake)$("#gameViewport").animate([{transform:"translateX(-4px)"},{transform:"translateX(4px)"},{transform:"none"}],{duration:120});if(run.hp<=0){run.hp=0;endRun()}updateHUD()}
@@ -911,9 +911,46 @@ function renderEnemy(){
  $("#targetLabel").textContent=`PRIORITY: ${e.target==="core"?"HULL":e.parts[e.target]?.name||"HULL"}`;
 }
 function renderBattleActions(){
- const box=$("#battleActions");box.innerHTML="";if(!run)return;const activeWeapons=run.weapons.map(i=>({inst:i,def:weapons.find(x=>x.id===i.id)})).filter(x=>x.def?.active).slice(0,4);
- activeWeapons.forEach(({inst,def:w})=>{const b=document.createElement("button");let left=Math.max(0,(run.actionCooldowns[w.id]||0)-Date.now());b.textContent=left>0?`${w.active.name}\n${Math.ceil(left/1000)}s`:w.active.name;b.disabled=left>0;b.onclick=()=>useActive(w,inst);box.appendChild(b)});
- while(box.children.length<4){const b=document.createElement("button");b.textContent="—";b.disabled=true;box.appendChild(b)}
+ const box=$("#battleActions");box.innerHTML="";if(!run)return;
+ const now=Date.now();
+ const activeWeapons=run.weapons.map(i=>({inst:i,def:weapons.find(x=>x.id===i.id)})).filter(x=>x.def?.active).slice(0,4);
+ activeWeapons.forEach(({inst,def:w})=>{
+   const b=document.createElement("button");
+   const end=run.actionCooldowns[w.id]||0;
+   const duration=Math.max(1,w.active.cool*1000);
+   const left=Math.max(0,end-now);
+   const progress=left>0?clamp(1-left/duration,0,1):1;
+   b.className=`battleActiveButton ${left>0?"recharging":"ready"}`;
+   b.dataset.cooldownEnd=String(end);
+   b.dataset.cooldownDuration=String(duration);
+   b.style.setProperty("--recharge",`${(progress*100).toFixed(2)}%`);
+   b.innerHTML=`<span class="battleActiveLabel">${w.active.name}</span>`;
+   b.disabled=left>0;
+   b.onclick=()=>useActive(w,inst);
+   box.appendChild(b);
+ });
+ while(box.children.length<4){
+   const b=document.createElement("button");
+   b.className="battleActiveButton placeholder";
+   b.innerHTML='<span class="battleActiveLabel">—</span>';
+   b.disabled=true;
+   box.appendChild(b);
+ }
+}
+function updateBattleActionCooldowns(){
+ const box=$("#battleActions");if(!box||!run)return;
+ const now=Date.now();
+ box.querySelectorAll(".battleActiveButton[data-cooldown-end]").forEach(b=>{
+   const end=Number(b.dataset.cooldownEnd)||0;
+   const duration=Math.max(1,Number(b.dataset.cooldownDuration)||1);
+   const left=Math.max(0,end-now);
+   const progress=left>0?clamp(1-left/duration,0,1):1;
+   b.style.setProperty("--recharge",`${(progress*100).toFixed(2)}%`);
+   const cooling=left>0;
+   b.disabled=cooling;
+   b.classList.toggle("recharging",cooling);
+   b.classList.toggle("ready",!cooling);
+ });
 }
 function useActive(w,inst){
  const a=w.active;if((run.actionCooldowns[w.id]||0)>Date.now())return;run.actionCooldowns[w.id]=Date.now()+a.cool*1000;

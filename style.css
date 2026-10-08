@@ -1752,3 +1752,20 @@ button.danger{background:#442029;border-color:#7a3440}
 .enemyComposite .vaCanvasMarkers{
   filter:none!important;
 }
+
+/* ===== v31.4.5 modal stacking fix =====
+   Item confirmation must sit above the storage-overflow chooser. */
+#itemActionModal{z-index:180}
+#overflowModal{z-index:160}
+
+
+/* ===== v31.4.6 battle player safe area + visual active recharge ===== */
+.battlePlayerV2{bottom:22%;}
+@media(max-width:560px){.battlePlayerV2{bottom:24%;}}
+.battleActions .battleActiveButton{--recharge:100%;position:relative;overflow:hidden;isolation:isolate;background:#10182b;border:1px solid #31405f;color:#a9b6cd;transition:border-color .18s ease,box-shadow .18s ease,color .18s ease;}
+.battleActions .battleActiveButton::before{content:"";position:absolute;z-index:-1;left:0;right:0;bottom:0;height:var(--recharge);background:linear-gradient(180deg,rgba(87,232,255,.18),rgba(41,171,209,.30)),#172a43;box-shadow:inset 0 0 16px rgba(91,231,255,.14);transition:height .16s linear;}
+.battleActions .battleActiveButton.recharging{color:#75839b;filter:brightness(.76) saturate(.72);cursor:default;}
+.battleActions .battleActiveButton.ready{color:#eefcff;border-color:#49cde9;box-shadow:0 0 10px rgba(73,205,233,.22),inset 0 0 10px rgba(82,224,255,.08);filter:brightness(1.08);}
+.battleActions .battleActiveButton.ready::before{background:linear-gradient(180deg,rgba(105,245,255,.30),rgba(50,190,229,.38)),#19334e;}
+.battleActions .battleActiveLabel{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;min-height:32px;white-space:normal;line-height:1.15;}
+.battleActions .battleActiveButton.placeholder{--recharge:0%;opacity:.55;filter:none;}
